@@ -1,0 +1,18 @@
+services:
+  mongodb:
+    image: mongo:7.0.30
+    container_name: cs340-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ecrocco
+      MONGO_INITDB_ROOT_PASSWORD: supersecret
+      MONGO_INITDB_DATABASE: aac
+    volumes:
+      - mongo-data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d
+      - ./aac_shelter_outcomes.csv:/data/aac_shelter_outcomes.csv:ro
+
+volumes:
+  mongo-data:
