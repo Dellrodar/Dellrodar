@@ -1,0 +1,86 @@
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "../../src/api/client";
+import { LoginPage } from "../../src/pages/LoginPage";
+
+const mockLogin = vi.fn();
+
+vi.mock("../../src/auth/AuthContext", () => ({
+  useAuth: () => ({ login: mockLogin }),
+}));
+
+const renderLoginPage = (
+  initialEntries: Array<string | { pathname: string; state?: unknown }> = ["/login"],
+) =>
+  render(
+    <MemoryRouter initialEntries={initialEntries}>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/dashboard" element={<div>Dashboard page</div>} />
+        <Route path="/admin" element={<div>Admin page</div>} />
+        <Route path="/signup" element={<div>Signup page</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+
+describe("LoginPage", () => {
+  beforeEach(() => {
+    mockLogin.mockReset();
+  });
+
+  it("submits the entered credentials and redirects to the dashboard on success", async () => {
+    const user = userEvent.setup();
+    mockLogin.mockResolvedValue(undefined);
+    renderLoginPage();
+
+    await user.type(screen.getByLabelText("Email"), "viewer@example.com");
+    await user.type(screen.getByLabelText("Password"), "password123");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    expect(mockLogin).toHaveBeenCalledWith("viewer@example.com", "password123");
+    expect(await screen.findByText("Dashboard page")).toBeInTheDocument();
+  });
+
+  it("redirects back to the page the user came from", async () => {
+    const user = userEvent.setup();
+    mockLogin.mockResolvedValue(undefined);
+    renderLoginPage([{ pathname: "/login", state: { from: { pathname: "/admin" } } }]);
+
+    await user.type(screen.getByLabelText("Email"), "admin@example.com");
+    await user.type(screen.getByLabelText("Password"), "password123");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    expect(await screen.findByText("Admin page")).toBeInTheDocument();
+  });
+
+  it("shows the server error message when login fails with an ApiError", async () => {
+    const user = userEvent.setup();
+    mockLogin.mockRejectedValue(new ApiError(401, "Invalid email or password"));
+    renderLoginPage();
+
+    await user.type(screen.getByLabelText("Email"), "viewer@example.com");
+    await user.type(screen.getByLabelText("Password"), "wrong-password");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    expect(await screen.findByText("Invalid email or password")).toBeInTheDocument();
+  });
+
+  it("shows a generic error message for non-API failures", async () => {
+    const user = userEvent.setup();
+    mockLogin.mockRejectedValue(new Error("network down"));
+    renderLoginPage();
+
+    await user.type(screen.getByLabelText("Email"), "viewer@example.com");
+    await user.type(screen.getByLabelText("Password"), "password123");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    expect(await screen.findByText("Unable to log in")).toBeInTheDocument();
+  });
+
+  it("links to the signup page", () => {
+    renderLoginPage();
+    expect(screen.getByRole("link", { name: "Sign up" })).toHaveAttribute("href", "/signup");
+  });
+});
