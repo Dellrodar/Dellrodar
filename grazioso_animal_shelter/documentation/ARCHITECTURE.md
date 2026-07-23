@@ -52,18 +52,62 @@ independently testable layers.
 
 ## Data model (current)
 
-Only the authentication-related tables exist so far:
-
 ```text
 roles(id, name)                -- seeded: viewer, staff, admin
 users(id, email, hashed_password, is_active, role_id -> roles.id, created_at)
+
+animals(id, animal_id, name, animal_type, breed, color, sex_upon_outcome,
+        date_of_birth, outcome_type, outcome_subtype, outcome_datetime,
+        age_upon_outcome_in_weeks, location_lat, location_long)
+
+rescue_profiles(id, name, animal_type, preferred_sex, min_age_weeks, max_age_weeks)
+rescue_profile_breeds(id, profile_id -> rescue_profiles.id, breed, weight)
 ```
 
-Week 4 (Databases enhancement) extends this same Alembic migration chain with the normalized
-animal/lookup/rescue-profile tables described in `../../documentation/CS499_Enhancement_Plan.md`.
-Week 5 (Algorithms enhancement) builds the `pg_trgm`-based rescue-profile matching and scoring on
-top of that schema. Neither exists yet in this codebase — the dashboard page says so explicitly
-rather than presenting placeholder data as if it were real.
+The `animals` table is intentionally **flat** for now — breed, type, and sex are plain columns
+matching the shape of the AAC source CSV (`backend/data/aac_shelter_outcomes.csv`, imported by
+`app/scripts/import_animals.py`). Normalizing those columns into lookup tables
+(`animal_breeds`, `animal_types`, ...) is the Databases enhancement and will extend this same
+Alembic migration chain. `animal_id` is indexed but not unique because the source data contains
+animals with multiple outcome records.
+
+The `rescue_profiles` / `rescue_profile_breeds` tables move the CS 340 rescue criteria (Water,
+Mountain/Wilderness, Disaster tracking) out of hard-coded application logic and into data, seeded
+by migration `0003`. Each profile breed carries a `weight` so individual breeds can be emphasized
+without code changes.
+
+## Rescue-profile matching algorithm
+
+The Algorithms and Data Structures enhancement. `GET /rescue-profiles/{id}/matches` returns
+candidates ranked by a 0–100 match score computed **in a single SQL query**
+(`app/repositories/rescue_repository.py`):
+
+```text
+breed score        0–50   best pg_trgm similarity(animal.breed, profile breed) x weight,
+                          across all of the profile's preferred breeds
+age score          0/20   age_upon_outcome_in_weeks within the profile's range
+sex score          0/20   sex_upon_outcome equals the profile's preferred sex
+availability score 0/10   outcome_type is not Died / Euthanasia / Disposal
+```
+
+Design decisions and trade-offs:
+
+- **Similarity scoring instead of exact filtering.** The original artifact filtered on exact breed
+  strings, which silently drops candidates like "Labrador Retriever" vs "Labrador Retriever Mix".
+  Trigram similarity (`pg_trgm`) gives partial credit for near-matches, which fits real shelter
+  data full of mixes, abbreviations, and inconsistent breed descriptions.
+- **Scoring in the database instead of application code.** Ranking and pagination happen in
+  Postgres (`ORDER BY score DESC ... LIMIT/OFFSET`), so only one page of rows crosses the wire
+  instead of every candidate being loaded into Python to sort. A GIN trigram index on
+  `animals.breed` (migration `0002`) keeps the similarity computation indexable as data grows.
+  The trade-off is that the scoring expression lives in SQLAlchemy expression code rather than
+  plain Python, which is harder to read — mitigated by building each score component in its own
+  small, named function.
+- **Soft ranking instead of hard filtering.** Animals failing a criterion lose points rather than
+  being excluded, so staff can still see near-miss candidates (e.g. right breed, slightly too
+  old). Only `animal_type` is a hard filter.
+- **Score breakdown in the API response.** Each match returns its component scores
+  (breed/age/sex/availability), so the ranking is explainable in the UI instead of a black box.
 
 ## Deployment scope
 
@@ -71,8 +115,8 @@ PostgreSQL, the backend, and the frontend all run via `docker-compose.yml` for l
 This is a **dev-mode** setup, not a production deployment: the backend and frontend directories
 are bind-mounted into their containers so `uvicorn --reload` and the Vite dev server pick up local
 edits immediately, and the backend image installs dependencies into the system Python rather than
-building a distributable artifact. The backend container runs `alembic upgrade head` and the
-idempotent admin-seed script on every startup.
+building a distributable artifact. The backend container runs `alembic upgrade head`, the
+idempotent admin-seed script, and the idempotent animal-data import on every startup.
 
 Production-style packaging (multi-stage builds, a static frontend build served by something like
 nginx, no reload, orchestration/CI-CD) is still out of scope — it's an explicitly deferred stretch
