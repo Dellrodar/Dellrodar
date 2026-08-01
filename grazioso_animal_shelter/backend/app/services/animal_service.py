@@ -21,6 +21,16 @@ async def search_animals(
     )
 
 
+async def breed_summary(
+    session: AsyncSession,
+    *,
+    q: str | None = None,
+    animal_type: str | None = None,
+    limit: int = 10,
+) -> tuple[list[tuple[str, int]], int, int]:
+    return await animal_repository.breed_summary(session, q=q, animal_type=animal_type, limit=limit)
+
+
 async def get_animal(session: AsyncSession, animal_pk: int) -> Animal:
     animal = await animal_repository.get_animal_by_id(session, animal_pk)
     if animal is None:

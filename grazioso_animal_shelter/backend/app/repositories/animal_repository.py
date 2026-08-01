@@ -46,3 +46,29 @@ async def search_animals(
 async def get_animal_by_id(session: AsyncSession, animal_pk: int) -> Animal | None:
     result = await session.execute(select(Animal).where(Animal.id == animal_pk))
     return result.scalar_one_or_none()
+
+
+async def breed_summary(
+    session: AsyncSession,
+    *,
+    q: str | None = None,
+    animal_type: str | None = None,
+    limit: int = 10,
+) -> tuple[list[tuple[str, int]], int, int]:
+    """Breed counts for the filtered animal set, largest first.
+
+    Returns the top ``limit`` breeds, the combined count of the remaining
+    breeds, and the total number of matching animals.
+    """
+    stmt = _apply_filters(
+        select(AnimalBreed.name, func.count()).join(Animal, Animal.breed_id == AnimalBreed.id),
+        q=q,
+        animal_type=animal_type,
+    ).group_by(AnimalBreed.name)
+    stmt = stmt.order_by(func.count().desc(), AnimalBreed.name)
+
+    rows = [(name, count) for name, count in (await session.execute(stmt)).all()]
+    top = rows[:limit]
+    other_count = sum(count for _, count in rows[limit:])
+    total_animals = sum(count for _, count in rows)
+    return top, other_count, total_animals

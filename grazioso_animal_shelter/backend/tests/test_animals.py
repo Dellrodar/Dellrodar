@@ -122,3 +122,51 @@ async def test_get_missing_animal_returns_404(client, seeded_animals):
     token = await _signup_and_login(client, "searcher7@example.com")
     resp = await client.get("/api/v1/animals/999999", headers=_auth(token))
     assert resp.status_code == 404
+
+
+async def test_breed_summary_requires_authentication(client):
+    resp = await client.get("/api/v1/animals/breed-summary")
+    assert resp.status_code == 401
+
+
+async def test_breed_summary_counts_filtered_set(client, seeded_animals):
+    token = await _signup_and_login(client, "searcher8@example.com")
+    resp = await client.get(
+        "/api/v1/animals/breed-summary", params={"animal_type": "Dog"}, headers=_auth(token)
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total_animals"] == 2
+    assert body["other_count"] == 0
+    breeds = {item["breed"]: item["count"] for item in body["items"]}
+    assert breeds == {"Labrador Retriever Mix": 1, "German Shepherd": 1}
+
+
+async def test_breed_summary_orders_by_count_descending(client, seeded_animals):
+    token = await _signup_and_login(client, "searcher9@example.com")
+    resp = await client.get("/api/v1/animals/breed-summary", headers=_auth(token))
+    body = resp.json()
+    counts = [item["count"] for item in body["items"]]
+    assert counts == sorted(counts, reverse=True)
+    assert body["total_animals"] == 3
+
+
+async def test_breed_summary_folds_extra_breeds_into_other(client, seeded_animals):
+    token = await _signup_and_login(client, "searcher10@example.com")
+    resp = await client.get(
+        "/api/v1/animals/breed-summary", params={"limit": 2}, headers=_auth(token)
+    )
+    body = resp.json()
+    assert len(body["items"]) == 2
+    assert body["other_count"] == 1
+    assert body["total_animals"] == 3
+
+
+async def test_breed_summary_applies_text_search(client, seeded_animals):
+    token = await _signup_and_login(client, "searcher11@example.com")
+    resp = await client.get(
+        "/api/v1/animals/breed-summary", params={"q": "shepherd"}, headers=_auth(token)
+    )
+    body = resp.json()
+    assert body["total_animals"] == 1
+    assert body["items"] == [{"breed": "German Shepherd", "count": 1}]
