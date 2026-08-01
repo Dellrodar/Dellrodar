@@ -2,6 +2,7 @@ from sqlalchemy import Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.animal import Animal
+from app.models.lookups import AnimalBreed, AnimalType
 
 
 def _apply_filters(
@@ -11,13 +12,13 @@ def _apply_filters(
     animal_type: str | None,
 ) -> Select:
     if animal_type:
-        stmt = stmt.where(Animal.animal_type.ilike(animal_type))
+        stmt = stmt.where(Animal.animal_type_ref.has(AnimalType.name.ilike(animal_type)))
     if q:
         pattern = f"%{q}%"
         stmt = stmt.where(
             or_(
                 Animal.name.ilike(pattern),
-                Animal.breed.ilike(pattern),
+                Animal.breed_ref.has(AnimalBreed.name.ilike(pattern)),
                 Animal.animal_id.ilike(pattern),
             )
         )

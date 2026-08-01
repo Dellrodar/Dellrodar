@@ -1,9 +1,8 @@
 import pytest
 from sqlalchemy import text
 
-from app.models.animal import Animal
-from app.models.rescue_profile import RescueProfile, RescueProfileBreed
 from tests.conftest import TestSessionLocal
+from tests.factories import LOOKUP_CLEANUP_ORDER, create_animal, create_profile
 
 
 async def _signup_and_login(client, email: str, password: str = "password123") -> str:
@@ -19,21 +18,19 @@ def _auth(token: str) -> dict[str, str]:
 @pytest.fixture
 async def water_rescue_data():
     """A Water Rescue style profile plus animals spanning the score spectrum."""
-    profile = RescueProfile(
-        name="Water Rescue",
-        animal_type="Dog",
-        preferred_sex="Intact Female",
-        min_age_weeks=26.0,
-        max_age_weeks=156.0,
-        breeds=[
-            RescueProfileBreed(breed="Labrador Retriever Mix", weight=1.0),
-            RescueProfileBreed(breed="Chesapeake Bay Retriever", weight=1.0),
-            RescueProfileBreed(breed="Newfoundland", weight=1.0),
-        ],
-    )
-    animals = [
+    async with TestSessionLocal() as session:
+        profile = await create_profile(
+            session,
+            name="Water Rescue",
+            animal_type="Dog",
+            preferred_sex="Intact Female",
+            min_age_weeks=26.0,
+            max_age_weeks=156.0,
+            breeds=["Labrador Retriever Mix", "Chesapeake Bay Retriever", "Newfoundland"],
+        )
         # Perfect candidate: exact breed, in age range, right sex, available.
-        Animal(
+        await create_animal(
+            session,
             animal_id="A100001",
             name="Perfect",
             animal_type="Dog",
@@ -41,9 +38,10 @@ async def water_rescue_data():
             sex_upon_outcome="Intact Female",
             age_upon_outcome_in_weeks=52.0,
             outcome_type="Transfer",
-        ),
+        )
         # Similar breed text but wrong sex and too old.
-        Animal(
+        await create_animal(
+            session,
             animal_id="A100002",
             name="Partial",
             animal_type="Dog",
@@ -51,9 +49,10 @@ async def water_rescue_data():
             sex_upon_outcome="Neutered Male",
             age_upon_outcome_in_weeks=300.0,
             outcome_type="Adoption",
-        ),
+        )
         # Unrelated breed, meets age/sex/availability criteria.
-        Animal(
+        await create_animal(
+            session,
             animal_id="A100003",
             name="WrongBreed",
             animal_type="Dog",
@@ -61,9 +60,10 @@ async def water_rescue_data():
             sex_upon_outcome="Intact Female",
             age_upon_outcome_in_weeks=52.0,
             outcome_type="Transfer",
-        ),
+        )
         # Right breed but no longer available.
-        Animal(
+        await create_animal(
+            session,
             animal_id="A100004",
             name="Unavailable",
             animal_type="Dog",
@@ -71,9 +71,10 @@ async def water_rescue_data():
             sex_upon_outcome="Intact Female",
             age_upon_outcome_in_weeks=52.0,
             outcome_type="Euthanasia",
-        ),
+        )
         # Cats are never candidates for a dog profile.
-        Animal(
+        await create_animal(
+            session,
             animal_id="A100005",
             name="NotADog",
             animal_type="Cat",
@@ -81,13 +82,8 @@ async def water_rescue_data():
             sex_upon_outcome="Intact Female",
             age_upon_outcome_in_weeks=52.0,
             outcome_type="Transfer",
-        ),
-    ]
-    async with TestSessionLocal() as session:
-        session.add(profile)
-        session.add_all(animals)
+        )
         await session.commit()
-        await session.refresh(profile)
         profile_id = profile.id
 
     yield profile_id
@@ -95,6 +91,8 @@ async def water_rescue_data():
     async with TestSessionLocal() as session:
         await session.execute(text("DELETE FROM animals"))
         await session.execute(text("DELETE FROM rescue_profiles"))
+        for table in LOOKUP_CLEANUP_ORDER:
+            await session.execute(text(f"DELETE FROM {table}"))
         await session.commit()
 
 

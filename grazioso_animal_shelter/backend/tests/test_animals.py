@@ -1,8 +1,8 @@
 import pytest
 from sqlalchemy import text
 
-from app.models.animal import Animal
 from tests.conftest import TestSessionLocal
+from tests.factories import LOOKUP_CLEANUP_ORDER, create_animal
 
 
 async def _signup_and_login(client, email: str, password: str = "password123") -> str:
@@ -17,40 +17,44 @@ def _auth(token: str) -> dict[str, str]:
 
 @pytest.fixture
 async def seeded_animals():
-    animals = [
-        Animal(
-            animal_id="A000001",
-            name="Bella",
-            animal_type="Dog",
-            breed="Labrador Retriever Mix",
-            sex_upon_outcome="Intact Female",
-            age_upon_outcome_in_weeks=52.0,
-        ),
-        Animal(
-            animal_id="A000002",
-            name="Max",
-            animal_type="Dog",
-            breed="German Shepherd",
-            sex_upon_outcome="Intact Male",
-            age_upon_outcome_in_weeks=104.0,
-        ),
-        Animal(
-            animal_id="A000003",
-            name="Whiskers",
-            animal_type="Cat",
-            breed="Domestic Shorthair Mix",
-            sex_upon_outcome="Spayed Female",
-            age_upon_outcome_in_weeks=30.0,
-        ),
-    ]
     async with TestSessionLocal() as session:
-        session.add_all(animals)
+        animals = [
+            await create_animal(
+                session,
+                animal_id="A000001",
+                name="Bella",
+                animal_type="Dog",
+                breed="Labrador Retriever Mix",
+                sex_upon_outcome="Intact Female",
+                age_upon_outcome_in_weeks=52.0,
+            ),
+            await create_animal(
+                session,
+                animal_id="A000002",
+                name="Max",
+                animal_type="Dog",
+                breed="German Shepherd",
+                sex_upon_outcome="Intact Male",
+                age_upon_outcome_in_weeks=104.0,
+            ),
+            await create_animal(
+                session,
+                animal_id="A000003",
+                name="Whiskers",
+                animal_type="Cat",
+                breed="Domestic Shorthair Mix",
+                sex_upon_outcome="Spayed Female",
+                age_upon_outcome_in_weeks=30.0,
+            ),
+        ]
         await session.commit()
 
     yield animals
 
     async with TestSessionLocal() as session:
         await session.execute(text("DELETE FROM animals"))
+        for table in LOOKUP_CLEANUP_ORDER:
+            await session.execute(text(f"DELETE FROM {table}"))
         await session.commit()
 
 
