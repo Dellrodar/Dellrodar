@@ -6,6 +6,7 @@ import { ApiError } from "../../src/api/client";
 import { DashboardPage } from "../../src/pages/DashboardPage";
 
 const mockSearchAnimals = vi.fn();
+const mockGetBreedSummary = vi.fn();
 const mockListRescueProfiles = vi.fn();
 const mockSearchRescueMatches = vi.fn();
 
@@ -18,11 +19,18 @@ vi.mock("../../src/auth/AuthContext", () => ({
 
 vi.mock("../../src/api/animals", () => ({
   searchAnimals: (...args: unknown[]) => mockSearchAnimals(...args),
+  getBreedSummary: (...args: unknown[]) => mockGetBreedSummary(...args),
 }));
 
 vi.mock("../../src/api/rescueProfiles", () => ({
   listRescueProfiles: (...args: unknown[]) => mockListRescueProfiles(...args),
   searchRescueMatches: (...args: unknown[]) => mockSearchRescueMatches(...args),
+}));
+
+vi.mock("../../src/components/AnimalMap", () => ({
+  AnimalMap: ({ animals, selectedId }: { animals: unknown[]; selectedId: number | null }) => (
+    <div data-testid="animal-map" data-count={animals.length} data-selected={selectedId ?? ""} />
+  ),
 }));
 
 const waterRescue = {
@@ -63,12 +71,16 @@ const pageOf = (items: Animal[], total = items.length, page = 1) => ({
   page_size: 10,
 });
 
+const emptySummary = { items: [], other_count: 0, total_animals: 0 };
+
 describe("DashboardPage", () => {
   beforeEach(() => {
     mockSearchAnimals.mockReset();
+    mockGetBreedSummary.mockReset();
     mockListRescueProfiles.mockReset();
     mockSearchRescueMatches.mockReset();
     mockListRescueProfiles.mockResolvedValue([waterRescue]);
+    mockGetBreedSummary.mockResolvedValue(emptySummary);
   });
 
   it("greets the signed-in user and loads the first page of animals", async () => {
@@ -212,6 +224,95 @@ describe("DashboardPage", () => {
     await user.selectOptions(screen.getByLabelText("Rescue profile:"), "");
     expect(await screen.findByText("Bella")).toBeInTheDocument();
     expect(screen.getByLabelText("Search animals")).toBeInTheDocument();
+  });
+
+  it("charts the breed distribution of the filtered search", async () => {
+    const user = userEvent.setup();
+    mockSearchAnimals.mockResolvedValue(pageOf([animal()]));
+    mockGetBreedSummary.mockResolvedValue({
+      items: [
+        { breed: "Labrador Retriever Mix", count: 12 },
+        { breed: "German Shepherd", count: 8 },
+      ],
+      other_count: 5,
+      total_animals: 25,
+    });
+    render(<DashboardPage />);
+    await screen.findByText("Bella");
+
+    expect(await screen.findByText("Breed distribution")).toBeInTheDocument();
+    expect(screen.getByText("12 · 48%")).toBeInTheDocument();
+    expect(screen.getByText("Other", { selector: ".legend-label" })).toBeInTheDocument();
+    expect(screen.getByText("5 · 20%")).toBeInTheDocument();
+    expect(mockGetBreedSummary).toHaveBeenCalledWith("user-token", {
+      q: undefined,
+      animalType: undefined,
+      limit: 5,
+    });
+
+    await user.type(screen.getByLabelText("Search animals"), "shepherd");
+    await user.click(screen.getByRole("button", { name: "Search" }));
+
+    expect(mockGetBreedSummary).toHaveBeenLastCalledWith("user-token", {
+      q: "shepherd",
+      animalType: undefined,
+      limit: 5,
+    });
+  });
+
+  it("charts the visible matches when a rescue profile is selected", async () => {
+    const user = userEvent.setup();
+    mockSearchAnimals.mockResolvedValue(pageOf([animal()]));
+    mockSearchRescueMatches.mockResolvedValue({
+      profile: waterRescue,
+      items: [
+        {
+          animal: animal(),
+          score: 100,
+          breed_score: 50,
+          age_score: 20,
+          sex_score: 20,
+          availability_score: 10,
+        },
+        {
+          animal: animal({ id: 2, animal_id: "A000002", name: "Rex" }),
+          score: 90,
+          breed_score: 50,
+          age_score: 20,
+          sex_score: 20,
+          availability_score: 0,
+        },
+      ],
+      total: 2,
+      page: 1,
+      page_size: 10,
+    });
+    render(<DashboardPage />);
+    await screen.findByText("Bella");
+
+    await user.selectOptions(screen.getByLabelText("Rescue profile:"), "1");
+
+    expect(await screen.findByText("Breed distribution")).toBeInTheDocument();
+    expect(screen.getByText("2 · 100%")).toBeInTheDocument();
+    expect(mockGetBreedSummary).toHaveBeenCalledTimes(1);
+  });
+
+  it("maps the visible animals and selects one on row click", async () => {
+    const user = userEvent.setup();
+    mockSearchAnimals.mockResolvedValue(
+      pageOf([animal(), animal({ id: 2, animal_id: "A000002", name: "Max" })]),
+    );
+    render(<DashboardPage />);
+    await screen.findByText("Bella");
+
+    const map = screen.getByTestId("animal-map");
+    expect(map).toHaveAttribute("data-count", "2");
+    expect(map).toHaveAttribute("data-selected", "");
+
+    await user.click(screen.getByText("Max"));
+
+    expect(screen.getByTestId("animal-map")).toHaveAttribute("data-selected", "2");
+    expect(screen.getByText("Max").closest("tr")).toHaveClass("selected-row");
   });
 
   it("shows an error when matches fail to load", async () => {
