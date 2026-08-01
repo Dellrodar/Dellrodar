@@ -70,6 +70,35 @@ describe("AuthProvider / useAuth", () => {
     await waitFor(() => expect(result.current.user).toEqual(mockUser));
   });
 
+  it("login() reports loading until the user fetch resolves", async () => {
+    vi.mocked(loginRequest).mockResolvedValue({ access_token: "new-token", token_type: "bearer" });
+    let resolveUser: (user: typeof mockUser) => void = () => {};
+    vi.mocked(fetchCurrentUser).mockReturnValue(
+      new Promise((resolve) => {
+        resolveUser = resolve;
+      }),
+    );
+
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.login("viewer@example.com", "password123");
+    });
+
+    // Route guards rely on this: a fresh login must read as loading, not as
+    // an unauthenticated user, until the profile arrives.
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.user).toBeNull();
+
+    await act(async () => {
+      resolveUser(mockUser);
+    });
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.user).toEqual(mockUser);
+  });
+
   it("logout() clears the token and user", async () => {
     localStorage.setItem("grazioso.token", "existing-token");
     vi.mocked(fetchCurrentUser).mockResolvedValue(mockUser);
