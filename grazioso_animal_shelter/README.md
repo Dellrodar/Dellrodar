@@ -19,16 +19,24 @@ See [`documentation/CS499_Enhancement_Plan.md`](../documentation/CS499_Enhanceme
 the full six-week plan and [`documentation/ARCHITECTURE.md`](documentation/ARCHITECTURE.md) for
 the layering and design decisions behind this codebase.
 
-### Current scope: Weeks 2–3 (Software Design & Engineering)
+### Current scope: Software Design & Engineering + Algorithms and Data Structures
 
-This codebase currently implements the **Software Design and Engineering** enhancement only:
-monorepo structure, the FastAPI/React scaffold, and a full authentication + role-based access
-control (RBAC) vertical slice (signup, login, seeded admin, role-protected admin panel).
+The codebase implements two of the three enhancement categories so far:
 
-Animal search, rescue-profile matching (`pg_trgm` similarity scoring), and the full normalized
-animal/lookup schema are **not implemented yet** — those are the Week 4 (Databases) and Week 5
-(Algorithms) enhancements. The dashboard page reflects this honestly with a "coming soon" notice
-rather than stubbed fake data.
+- **Software Design and Engineering:** monorepo structure, the FastAPI/React scaffold, and a full
+  authentication + role-based access control (RBAC) vertical slice (signup, login, seeded admin,
+  role-protected admin panel).
+- **Algorithms and Data Structures:** authenticated animal search (name/breed/animal ID with
+  type filtering and pagination) over the imported AAC shelter dataset, plus rescue-profile
+  matching — candidates are scored 0–100 using `pg_trgm` breed similarity, age range, preferred
+  sex, and availability, then ranked and paginated in a single SQL query. The three CS 340 rescue
+  profiles (Water, Mountain/Wilderness, Disaster tracking) are stored as data, not code. See the
+  "Rescue-profile matching algorithm" section of
+  [`documentation/ARCHITECTURE.md`](documentation/ARCHITECTURE.md) for the scoring design and
+  trade-offs.
+
+The full normalized animal/lookup schema (breed, type, sex as lookup tables) is **not implemented
+yet** — that is the Databases enhancement, which will extend the same Alembic migration chain.
 
 ---
 
@@ -36,7 +44,7 @@ rather than stubbed fake data.
 
 | Role   | Permissions |
 |--------|-------------|
-| Viewer | View dashboard (default role for new signups) |
+| Viewer | View dashboard, search animals, view ranked rescue-profile matches (default role for new signups) |
 | Staff  | Viewer permissions + animal management (added in a later enhancement) |
 | Admin  | Staff permissions + user management via the Admin Panel |
 
@@ -61,9 +69,10 @@ docker compose up --build
 
 - Frontend: `http://localhost:5173`
 - Backend: `http://localhost:8000` (interactive docs at `/docs`)
-- The backend container runs `alembic upgrade head` and the idempotent admin-seed script on
-  every startup, so the seeded admin (`admin@grazioso-shelter.dev` / `change-me` — change this
-  before it's ever real) is always available.
+- The backend container runs `alembic upgrade head`, the idempotent admin-seed script, and the
+  idempotent animal-data import on every startup, so the seeded admin
+  (`admin@grazioso-shelter.dev` / `change-me` — change this before it's ever real) and the
+  10,000-record AAC shelter dataset are always available.
 
 Run the test suites inside the running containers:
 
@@ -97,6 +106,7 @@ copy ..\.env.example .env     # then edit values as needed
 
 alembic upgrade head
 python -m app.scripts.seed_admin
+python -m app.scripts.import_animals   # loads backend/data/aac_shelter_outcomes.csv (idempotent; --replace to reload)
 
 uvicorn app.main:app --reload
 ```

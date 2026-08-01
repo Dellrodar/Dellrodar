@@ -6,7 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from alembic import context
 from app.core.config import get_settings
 from app.db.base import Base
-from app.models import role, user  # noqa: F401  (register models on Base.metadata)
+from app.models import (  # noqa: F401  (register models on Base.metadata)
+    animal,
+    rescue_profile,
+    role,
+    user,
+)
 
 config = context.config
 

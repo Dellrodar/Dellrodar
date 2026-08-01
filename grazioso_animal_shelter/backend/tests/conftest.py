@@ -55,6 +55,9 @@ async def setup_database():
     await _ensure_test_database_exists()
 
     async with test_engine.begin() as conn:
+        # Migrations enable pg_trgm in real databases; the test database is
+        # built from metadata, so create the extension here.
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 

@@ -1,0 +1,120 @@
+import pytest
+from sqlalchemy import text
+
+from app.models.animal import Animal
+from tests.conftest import TestSessionLocal
+
+
+async def _signup_and_login(client, email: str, password: str = "password123") -> str:
+    await client.post("/api/v1/auth/signup", json={"email": email, "password": password})
+    login = await client.post("/api/v1/auth/login", json={"email": email, "password": password})
+    return login.json()["access_token"]
+
+
+def _auth(token: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+async def seeded_animals():
+    animals = [
+        Animal(
+            animal_id="A000001",
+            name="Bella",
+            animal_type="Dog",
+            breed="Labrador Retriever Mix",
+            sex_upon_outcome="Intact Female",
+            age_upon_outcome_in_weeks=52.0,
+        ),
+        Animal(
+            animal_id="A000002",
+            name="Max",
+            animal_type="Dog",
+            breed="German Shepherd",
+            sex_upon_outcome="Intact Male",
+            age_upon_outcome_in_weeks=104.0,
+        ),
+        Animal(
+            animal_id="A000003",
+            name="Whiskers",
+            animal_type="Cat",
+            breed="Domestic Shorthair Mix",
+            sex_upon_outcome="Spayed Female",
+            age_upon_outcome_in_weeks=30.0,
+        ),
+    ]
+    async with TestSessionLocal() as session:
+        session.add_all(animals)
+        await session.commit()
+
+    yield animals
+
+    async with TestSessionLocal() as session:
+        await session.execute(text("DELETE FROM animals"))
+        await session.commit()
+
+
+async def test_search_requires_authentication(client):
+    resp = await client.get("/api/v1/animals")
+    assert resp.status_code == 401
+
+
+async def test_search_returns_paginated_results(client, seeded_animals):
+    token = await _signup_and_login(client, "searcher@example.com")
+    resp = await client.get("/api/v1/animals", headers=_auth(token))
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total"] == 3
+    assert body["page"] == 1
+    assert len(body["items"]) == 3
+
+
+async def test_search_by_name(client, seeded_animals):
+    token = await _signup_and_login(client, "searcher2@example.com")
+    resp = await client.get("/api/v1/animals", params={"q": "bella"}, headers=_auth(token))
+    body = resp.json()
+    assert body["total"] == 1
+    assert body["items"][0]["name"] == "Bella"
+
+
+async def test_search_by_breed(client, seeded_animals):
+    token = await _signup_and_login(client, "searcher3@example.com")
+    resp = await client.get("/api/v1/animals", params={"q": "shepherd"}, headers=_auth(token))
+    body = resp.json()
+    assert body["total"] == 1
+    assert body["items"][0]["breed"] == "German Shepherd"
+
+
+async def test_filter_by_animal_type(client, seeded_animals):
+    token = await _signup_and_login(client, "searcher4@example.com")
+    resp = await client.get("/api/v1/animals", params={"animal_type": "Cat"}, headers=_auth(token))
+    body = resp.json()
+    assert body["total"] == 1
+    assert body["items"][0]["animal_type"] == "Cat"
+
+
+async def test_pagination_limits_page_size(client, seeded_animals):
+    token = await _signup_and_login(client, "searcher5@example.com")
+    resp = await client.get(
+        "/api/v1/animals", params={"page": 2, "page_size": 2}, headers=_auth(token)
+    )
+    body = resp.json()
+    assert body["total"] == 3
+    assert body["page"] == 2
+    assert len(body["items"]) == 1
+
+
+async def test_get_animal_detail(client, seeded_animals):
+    token = await _signup_and_login(client, "searcher6@example.com")
+    listing = await client.get("/api/v1/animals", params={"q": "Max"}, headers=_auth(token))
+    animal_pk = listing.json()["items"][0]["id"]
+
+    resp = await client.get(f"/api/v1/animals/{animal_pk}", headers=_auth(token))
+    assert resp.status_code == 200
+    assert resp.json()["name"] == "Max"
+
+
+async def test_get_missing_animal_returns_404(client, seeded_animals):
+    token = await _signup_and_login(client, "searcher7@example.com")
+    resp = await client.get("/api/v1/animals/999999", headers=_auth(token))
+    assert resp.status_code == 404

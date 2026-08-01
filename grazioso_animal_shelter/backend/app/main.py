@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import admin, auth, system
+from app.api.routes import admin, animals, auth, rescue_profiles, system
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -19,3 +19,5 @@ app.add_middleware(
 app.include_router(system.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
+app.include_router(animals.router, prefix="/api/v1")
+app.include_router(rescue_profiles.router, prefix="/api/v1")
