@@ -114,6 +114,13 @@ content:
 footer_show_references: false
 
 # Build settings
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - docker-compose.yml
+  - vendor
+  - .bundle
+
 plugins:
   - jekyll-seo-tag
   - jekyll-remote-theme

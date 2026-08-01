@@ -1,0 +1,7 @@
+source "https://rubygems.org"
+
+# Same build stack GitHub Pages uses, so the local preview matches the deployed site
+gem "github-pages", group: :jekyll_plugins
+
+# Required to run `jekyll serve` on Ruby 3
+gem "webrick"
