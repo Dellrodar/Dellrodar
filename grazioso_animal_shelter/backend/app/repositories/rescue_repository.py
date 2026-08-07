@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.animal import Animal
+from app.models.lookups import AnimalBreed, AnimalSex, OutcomeType
 from app.models.rescue_profile import RescueProfile, RescueProfileBreed
 
 # Score weights: breed similarity dominates, hard criteria add fixed points.
@@ -51,12 +52,14 @@ def _breed_score(profile: RescueProfile) -> ColumnElement[float]:
         select(
             func.max(
                 func.least(
-                    func.similarity(Animal.breed, RescueProfileBreed.breed)
+                    func.similarity(AnimalBreed.name, RescueProfileBreed.breed)
                     * RescueProfileBreed.weight,
                     1.0,
                 )
             )
         )
+        .select_from(RescueProfileBreed)
+        .join(AnimalBreed, AnimalBreed.id == Animal.breed_id)
         .where(RescueProfileBreed.profile_id == profile.id)
         .correlate(Animal)
         .scalar_subquery()
@@ -82,13 +85,20 @@ def _age_score(profile: RescueProfile) -> ColumnElement[float]:
 def _sex_score(profile: RescueProfile) -> ColumnElement[float]:
     if not profile.preferred_sex:
         return literal(SEX_POINTS)
-    return case((Animal.sex_upon_outcome == profile.preferred_sex, SEX_POINTS), else_=0.0)
+    return case(
+        (Animal.sex_ref.has(AnimalSex.name == profile.preferred_sex), SEX_POINTS),
+        else_=0.0,
+    )
 
 
 def _availability_score() -> ColumnElement[float]:
+    unavailable_ids = select(OutcomeType.id).where(OutcomeType.name.in_(UNAVAILABLE_OUTCOMES))
     return case(
         (
-            or_(Animal.outcome_type.is_(None), Animal.outcome_type.not_in(UNAVAILABLE_OUTCOMES)),
+            or_(
+                Animal.outcome_type_id.is_(None),
+                Animal.outcome_type_id.not_in(unavailable_ids),
+            ),
             AVAILABILITY_POINTS,
         ),
         else_=0.0,
@@ -108,7 +118,7 @@ async def search_matches(
     availability_score = _availability_score()
     total_score = breed_score + age_score + sex_score + availability_score
 
-    candidate_filter = Animal.animal_type == profile.animal_type
+    candidate_filter = Animal.animal_type_id == profile.animal_type_id
 
     total = await session.scalar(select(func.count()).select_from(Animal).where(candidate_filter))
 

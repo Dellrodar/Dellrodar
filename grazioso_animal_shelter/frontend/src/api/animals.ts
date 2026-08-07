@@ -44,3 +44,33 @@ export const searchAnimals = (
   const query = params.toString();
   return apiClient.get<AnimalPage>(`/animals${query ? `?${query}` : ""}`, token);
 };
+
+export interface BreedCount {
+  breed: string;
+  count: number;
+}
+
+export interface BreedSummary {
+  items: BreedCount[];
+  other_count: number;
+  total_animals: number;
+}
+
+export interface BreedSummaryParams {
+  q?: string;
+  animalType?: string;
+  limit?: number;
+}
+
+export const getBreedSummary = (
+  token: string,
+  { q, animalType, limit }: BreedSummaryParams = {},
+): Promise<BreedSummary> => {
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (animalType) params.set("animal_type", animalType);
+  if (limit) params.set("limit", String(limit));
+
+  const query = params.toString();
+  return apiClient.get<BreedSummary>(`/animals/breed-summary${query ? `?${query}` : ""}`, token);
+};

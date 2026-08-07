@@ -7,6 +7,14 @@
   --danger: #c0392b;
   --sans: system-ui, "Segoe UI", Roboto, sans-serif;
 
+  /* Categorical chart palette, CVD-validated fixed order. */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-other: #898781;
+
   font: 16px / 145% var(--sans);
   color: var(--text);
   background: var(--bg);
@@ -20,6 +28,11 @@
     --border: #33343d;
     --accent: #a67bff;
     --accent-contrast: #16171d;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
   }
 }
 
@@ -152,4 +165,104 @@ td {
   align-items: center;
   gap: 12px;
   margin-top: 16px;
+}
+
+.dashboard-visuals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.breed-chart {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.breed-chart figcaption {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.breed-chart svg {
+  display: block;
+  width: 100%;
+  max-width: 240px;
+  height: auto;
+  margin: 0 auto;
+}
+
+.breed-chart-total {
+  font: 600 24px var(--sans);
+  fill: var(--text);
+}
+
+.breed-chart-total-label {
+  font: 12px var(--sans);
+  fill: var(--text);
+  opacity: 0.7;
+}
+
+.chart-legend {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.chart-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.legend-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legend-value {
+  color: var(--text);
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.animal-map {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.animal-map figcaption {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.animal-map-canvas {
+  height: 280px;
+  border-radius: 4px;
+}
+
+tbody tr {
+  cursor: pointer;
+}
+
+tbody tr.selected-row {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }

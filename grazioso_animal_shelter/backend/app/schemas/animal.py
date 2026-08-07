@@ -27,3 +27,14 @@ class AnimalPage(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+class BreedCount(BaseModel):
+    breed: str
+    count: int
+
+
+class BreedSummary(BaseModel):
+    items: list[BreedCount]
+    other_count: int
+    total_animals: int

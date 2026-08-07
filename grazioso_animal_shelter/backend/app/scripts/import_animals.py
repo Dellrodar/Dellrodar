@@ -3,7 +3,8 @@
 Usage: python -m app.scripts.import_animals [--replace]
 
 The import is skipped when animal records already exist unless --replace is
-passed, in which case existing rows are deleted first.
+passed, in which case existing animal rows are deleted first. Lookup rows are
+upserted by name and never deleted, so re-imports cannot duplicate them.
 """
 
 import argparse
@@ -11,11 +12,15 @@ import asyncio
 import csv
 from datetime import UTC, date, datetime
 from pathlib import Path
+from typing import Any
 
 from sqlalchemy import delete, func, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import AsyncSessionLocal
 from app.models.animal import Animal
+from app.models.lookups import AnimalBreed, AnimalSex, AnimalType, OutcomeType
 
 CSV_PATH = Path(__file__).resolve().parents[2] / "data" / "aac_shelter_outcomes.csv"
 BATCH_SIZE = 1000
@@ -45,22 +50,36 @@ def _datetime(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value).replace(tzinfo=UTC)
 
 
-def row_to_animal(row: dict[str, str]) -> Animal:
-    return Animal(
-        animal_id=(row["animal_id"] or "").strip(),
-        name=_text(row.get("name")),
-        animal_type=(row["animal_type"] or "").strip(),
-        breed=(row["breed"] or "").strip(),
-        color=_text(row.get("color")),
-        sex_upon_outcome=_text(row.get("sex_upon_outcome")),
-        date_of_birth=_date(row.get("date_of_birth")),
-        outcome_type=_text(row.get("outcome_type")),
-        outcome_subtype=_text(row.get("outcome_subtype")),
-        outcome_datetime=_datetime(row.get("datetime")),
-        age_upon_outcome_in_weeks=_float(row.get("age_upon_outcome_in_weeks")),
-        location_lat=_float(row.get("location_lat")),
-        location_long=_float(row.get("location_long")),
+def row_to_fields(row: dict[str, str]) -> dict[str, Any]:
+    return {
+        "animal_id": (row.get("animal_id") or "").strip(),
+        "name": _text(row.get("name")),
+        "animal_type": (row.get("animal_type") or "").strip(),
+        "breed": (row.get("breed") or "").strip(),
+        "color": _text(row.get("color")),
+        "sex_upon_outcome": _text(row.get("sex_upon_outcome")),
+        "date_of_birth": _date(row.get("date_of_birth")),
+        "outcome_type": _text(row.get("outcome_type")),
+        "outcome_subtype": _text(row.get("outcome_subtype")),
+        "outcome_datetime": _datetime(row.get("datetime")),
+        "age_upon_outcome_in_weeks": _float(row.get("age_upon_outcome_in_weeks")),
+        "location_lat": _float(row.get("location_lat")),
+        "location_long": _float(row.get("location_long")),
+    }
+
+
+async def _lookup_ids(session: AsyncSession, model: type, names: set[str | None]) -> dict[str, int]:
+    """Upsert lookup names and return a name-to-id map."""
+    values = sorted(name for name in names if name)
+    if not values:
+        return {}
+    await session.execute(
+        pg_insert(model)
+        .values([{"name": name} for name in values])
+        .on_conflict_do_nothing(index_elements=["name"])
     )
+    result = await session.execute(select(model.name, model.id).where(model.name.in_(values)))
+    return dict(result.all())
 
 
 async def import_animals(replace: bool = False) -> None:
@@ -76,26 +95,53 @@ async def import_animals(replace: bool = False) -> None:
             await session.execute(delete(Animal))
             print(f"Deleted {existing} existing animal rows")
 
-        imported = 0
+        # Pass 1: read and clean every row, collecting distinct lookup values.
+        rows: list[dict[str, Any]] = []
         skipped = 0
         with CSV_PATH.open(newline="", encoding="utf-8") as f:
-            batch: list[Animal] = []
             for row in csv.DictReader(f):
-                animal = row_to_animal(row)
+                fields = row_to_fields(row)
                 # animal_id, animal_type, and breed are required by the schema.
-                if not (animal.animal_id and animal.animal_type and animal.breed):
+                if not (fields["animal_id"] and fields["animal_type"] and fields["breed"]):
                     skipped += 1
                     continue
-                batch.append(animal)
-                if len(batch) >= BATCH_SIZE:
-                    session.add_all(batch)
-                    await session.flush()
-                    imported += len(batch)
-                    batch = []
-            if batch:
+                rows.append(fields)
+
+        # Pass 2: upsert lookups, then insert animals carrying lookup ids.
+        type_ids = await _lookup_ids(session, AnimalType, {r["animal_type"] for r in rows})
+        breed_ids = await _lookup_ids(session, AnimalBreed, {r["breed"] for r in rows})
+        sex_ids = await _lookup_ids(session, AnimalSex, {r["sex_upon_outcome"] for r in rows})
+        outcome_ids = await _lookup_ids(session, OutcomeType, {r["outcome_type"] for r in rows})
+
+        imported = 0
+        batch: list[Animal] = []
+        for fields in rows:
+            batch.append(
+                Animal(
+                    animal_id=fields["animal_id"],
+                    name=fields["name"],
+                    animal_type_id=type_ids[fields["animal_type"]],
+                    breed_id=breed_ids[fields["breed"]],
+                    color=fields["color"],
+                    sex_id=sex_ids.get(fields["sex_upon_outcome"]),
+                    date_of_birth=fields["date_of_birth"],
+                    outcome_type_id=outcome_ids.get(fields["outcome_type"]),
+                    outcome_subtype=fields["outcome_subtype"],
+                    outcome_datetime=fields["outcome_datetime"],
+                    age_upon_outcome_in_weeks=fields["age_upon_outcome_in_weeks"],
+                    location_lat=fields["location_lat"],
+                    location_long=fields["location_long"],
+                )
+            )
+            if len(batch) >= BATCH_SIZE:
                 session.add_all(batch)
                 await session.flush()
                 imported += len(batch)
+                batch = []
+        if batch:
+            session.add_all(batch)
+            await session.flush()
+            imported += len(batch)
 
         await session.commit()
         print(f"Imported {imported} animal records ({skipped} skipped)")

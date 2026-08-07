@@ -50,31 +50,63 @@ independently testable layers.
   decorator (e.g. the entire `admin` router requires `role=admin`), so permission requirements are
   visible at the route definition instead of buried inside handler bodies.
 
-## Data model (current)
+## Data model (normalized)
 
 ```text
 roles(id, name)                -- seeded: viewer, staff, admin
 users(id, email, hashed_password, is_active, role_id -> roles.id, created_at)
 
-animals(id, animal_id, name, animal_type, breed, color, sex_upon_outcome,
-        date_of_birth, outcome_type, outcome_subtype, outcome_datetime,
-        age_upon_outcome_in_weeks, location_lat, location_long)
+animal_types(id, name)         -- lookup, unique names
+animal_breeds(id, name)        -- lookup, unique names, GIN trigram index on name
+animal_sexes(id, name)         -- lookup, unique names
+outcome_types(id, name)        -- lookup, unique names
 
-rescue_profiles(id, name, animal_type, preferred_sex, min_age_weeks, max_age_weeks)
+animals(id, animal_id, name, animal_type_id -> animal_types.id,
+        breed_id -> animal_breeds.id, color, sex_id -> animal_sexes.id,
+        date_of_birth, outcome_type_id -> outcome_types.id, outcome_subtype,
+        outcome_datetime, age_upon_outcome_in_weeks, location_lat, location_long)
+
+rescue_profiles(id, name, animal_type_id -> animal_types.id, preferred_sex,
+                min_age_weeks, max_age_weeks)
 rescue_profile_breeds(id, profile_id -> rescue_profiles.id, breed, weight)
 ```
 
-The `animals` table is intentionally **flat** for now — breed, type, and sex are plain columns
-matching the shape of the AAC source CSV (`backend/data/aac_shelter_outcomes.csv`, imported by
-`app/scripts/import_animals.py`). Normalizing those columns into lookup tables
-(`animal_breeds`, `animal_types`, ...) is the Databases enhancement and will extend this same
-Alembic migration chain. `animal_id` is indexed but not unique because the source data contains
-animals with multiple outcome records.
+This is the Databases enhancement. The original flat `animals` table (breed, type, sex, and
+outcome as free-text columns mirroring the AAC CSV) was normalized **in place** by migration
+`0004`: it creates the four lookup tables, backfills them with `INSERT ... SELECT DISTINCT` from
+the existing rows, adds the FK columns, populates them with `UPDATE ... FROM` joins, tightens
+`animal_type_id`/`breed_id` to `NOT NULL`, and only then drops the old text columns. The whole
+migration is server-side SQL, so it upgrades a populated database without ever pulling rows into
+Python, and its `downgrade()` fully reverses the transformation. One ordering subtlety: on a
+fresh database migration `0003` seeds rescue profiles before any animals exist, so the
+`animal_types` backfill unions distinct types from `rescue_profiles` as well as `animals`.
+
+Normalization decisions and trade-offs:
+
+- **What normalized:** breed, type, sex, and outcome — the four low-cardinality categorical
+  columns that queries filter and join on. Foreign keys now guarantee referential integrity
+  (a breed row cannot be deleted while animals reference it) and lookup names are unique.
+- **What stayed text:** `color` holds multi-valued strings ("Black/White") and
+  `outcome_subtype` is sparse and dependent on `outcome_type`; splitting either adds tables
+  without a query or integrity payoff. `rescue_profile_breeds.breed` also stays text
+  deliberately — it is a fuzzy *search term* for `pg_trgm` similarity, not a reference, and
+  profile criteria may name breeds (e.g. "Chesapeake Bay Retriever") that never appear
+  verbatim in the animal data. An FK would silently constrain the criteria vocabulary to
+  whatever the CSV happened to contain.
+- **API compatibility:** the SQLAlchemy models expose read-only `breed`/`animal_type`/
+  `sex_upon_outcome`/`outcome_type` properties backed by eagerly joined lookup relationships,
+  so Pydantic's `from_attributes` serialization — and therefore every API response shape and
+  the entire frontend — is unchanged by the schema migration.
+- **The importer** (`app/scripts/import_animals.py`) upserts lookup names with
+  `INSERT ... ON CONFLICT DO NOTHING` and inserts animals carrying lookup ids. It still skips
+  when animals exist and `--replace` deletes animal rows only; lookup rows persist and cannot
+  duplicate.
 
 The `rescue_profiles` / `rescue_profile_breeds` tables move the CS 340 rescue criteria (Water,
 Mountain/Wilderness, Disaster tracking) out of hard-coded application logic and into data, seeded
 by migration `0003`. Each profile breed carries a `weight` so individual breeds can be emphasized
-without code changes.
+without code changes. `animal_id` is indexed but not unique because the source data contains
+animals with multiple outcome records.
 
 ## Rescue-profile matching algorithm
 
@@ -83,11 +115,11 @@ candidates ranked by a 0–100 match score computed **in a single SQL query**
 (`app/repositories/rescue_repository.py`):
 
 ```text
-breed score        0–50   best pg_trgm similarity(animal.breed, profile breed) x weight,
+breed score        0–50   best pg_trgm similarity(animal's breed name, profile breed) x weight,
                           across all of the profile's preferred breeds
 age score          0/20   age_upon_outcome_in_weeks within the profile's range
-sex score          0/20   sex_upon_outcome equals the profile's preferred sex
-availability score 0/10   outcome_type is not Died / Euthanasia / Disposal
+sex score          0/20   the animal's sex name equals the profile's preferred sex
+availability score 0/10   outcome type is not Died / Euthanasia / Disposal
 ```
 
 Design decisions and trade-offs:
@@ -98,16 +130,36 @@ Design decisions and trade-offs:
   data full of mixes, abbreviations, and inconsistent breed descriptions.
 - **Scoring in the database instead of application code.** Ranking and pagination happen in
   Postgres (`ORDER BY score DESC ... LIMIT/OFFSET`), so only one page of rows crosses the wire
-  instead of every candidate being loaded into Python to sort. A GIN trigram index on
-  `animals.breed` (migration `0002`) keeps the similarity computation indexable as data grows.
-  The trade-off is that the scoring expression lives in SQLAlchemy expression code rather than
-  plain Python, which is harder to read — mitigated by building each score component in its own
-  small, named function.
+  instead of every candidate being loaded into Python to sort. Since normalization, similarity
+  is computed against `animal_breeds.name` (joined via `animals.breed_id`), and the GIN trigram
+  index moved there with it (migration `0004`) — so `pg_trgm` runs over the few hundred distinct
+  breed rows rather than all 10,000 animal rows. The trade-off is that the scoring expression
+  lives in SQLAlchemy expression code rather than plain Python, which is harder to read —
+  mitigated by building each score component in its own small, named function.
 - **Soft ranking instead of hard filtering.** Animals failing a criterion lose points rather than
   being excluded, so staff can still see near-miss candidates (e.g. right breed, slightly too
   old). Only `animal_type` is a hard filter.
 - **Score breakdown in the API response.** Each match returns its component scores
   (breed/age/sex/availability), so the ranking is explainable in the UI instead of a black box.
+
+## Dashboard visuals (chart + map)
+
+The dashboard restores the CS 340 artifact's chart and map alongside its table:
+
+- **Breed distribution donut** (`frontend/src/components/BreedChart.tsx`) — a dependency-free
+  SVG component. In search mode it is fed by `GET /animals/breed-summary`, a `GROUP BY breed_id`
+  aggregate over the lookup join that honors the same `q`/`animal_type` filters as the table, so
+  the chart covers the *whole* filtered set (not just the visible page) and refetches on new
+  searches but not on page turns. Breeds beyond the top five fold into an "Other" bucket
+  server-side. In rescue-profile mode the chart is derived client-side from the current page of
+  ranked matches. The five categorical colors are a colorblind-validated fixed-order palette with
+  separate dark-mode steps; identity is never color-alone (every slice has a legend row with its
+  count and percentage, plus a hover tooltip).
+- **Location map** (`frontend/src/components/AnimalMap.tsx`) — `react-leaflet` with
+  OpenStreetMap tiles, showing a circle marker per animal on the current page (breed as tooltip,
+  name as popup, matching the original dash-leaflet behavior). Animals without coordinates are
+  skipped. Clicking a table row highlights that row, enlarges its marker, and recenters the map
+  on it; the selection resets on search, page, and profile changes.
 
 ## Deployment scope
 

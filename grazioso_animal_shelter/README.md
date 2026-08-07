@@ -19,9 +19,7 @@ See [`documentation/CS499_Enhancement_Plan.md`](../documentation/CS499_Enhanceme
 the full six-week plan and [`documentation/ARCHITECTURE.md`](documentation/ARCHITECTURE.md) for
 the layering and design decisions behind this codebase.
 
-### Current scope: Software Design & Engineering + Algorithms and Data Structures
-
-The codebase implements two of the three enhancement categories so far:
+### Current scope: all three enhancement categories
 
 - **Software Design and Engineering:** monorepo structure, the FastAPI/React scaffold, and a full
   authentication + role-based access control (RBAC) vertical slice (signup, login, seeded admin,
@@ -34,9 +32,18 @@ The codebase implements two of the three enhancement categories so far:
   "Rescue-profile matching algorithm" section of
   [`documentation/ARCHITECTURE.md`](documentation/ARCHITECTURE.md) for the scoring design and
   trade-offs.
+- **Databases:** the animal data is fully normalized — breed, type, sex, and outcome live in
+  lookup tables (`animal_breeds`, `animal_types`, `animal_sexes`, `outcome_types`) referenced by
+  foreign keys, built by an in-place Alembic data migration (`0004`) that backfills the lookups
+  from the previously flat columns and reversibly drops them. The trigram index moved to
+  `animal_breeds.name`, the CSV importer upserts lookups idempotently, and a breed-summary
+  aggregate endpoint feeds the dashboard chart. See the "Data model (normalized)" section of
+  [`documentation/ARCHITECTURE.md`](documentation/ARCHITECTURE.md) for the migration narrative
+  and trade-offs.
 
-The full normalized animal/lookup schema (breed, type, sex as lookup tables) is **not implemented
-yet** — that is the Databases enhancement, which will extend the same Alembic migration chain.
+The dashboard also restores the CS 340 artifact's visuals: a breed-distribution donut chart of
+the filtered search (or the visible ranked matches) and an OpenStreetMap location map with a
+marker per animal — click a table row to highlight and recenter on it.
 
 ---
 

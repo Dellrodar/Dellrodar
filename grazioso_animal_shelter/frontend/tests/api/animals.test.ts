@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { searchAnimals } from "../../src/api/animals";
+import { getBreedSummary, searchAnimals } from "../../src/api/animals";
 
 const emptyPage = { items: [], total: 0, page: 1, page_size: 10 };
 
@@ -38,5 +38,25 @@ describe("searchAnimals", () => {
     expect(url).toContain("animal_type=Dog");
     expect(url).toContain("page=2");
     expect(url).toContain("page_size=25");
+  });
+});
+
+describe("getBreedSummary", () => {
+  it("requests /animals/breed-summary with the bearer token", async () => {
+    await getBreedSummary("token123");
+
+    const [url, options] = mockFetch.mock.calls[0];
+    expect(url).toMatch(/\/animals\/breed-summary$/);
+    expect(options.headers.Authorization).toBe("Bearer token123");
+  });
+
+  it("builds query params from summary options", async () => {
+    await getBreedSummary("token123", { q: "lab mix", animalType: "Dog", limit: 5 });
+
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toContain("/animals/breed-summary?");
+    expect(url).toContain("q=lab+mix");
+    expect(url).toContain("animal_type=Dog");
+    expect(url).toContain("limit=5");
   });
 });

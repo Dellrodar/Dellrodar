@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useState } from "react";
-import { type AnimalPage, searchAnimals } from "../api/animals";
+import { type AnimalPage, type BreedSummary, getBreedSummary, searchAnimals } from "../api/animals";
 import { ApiError } from "../api/client";
 import {
   listRescueProfiles,
@@ -8,9 +8,32 @@ import {
   searchRescueMatches,
 } from "../api/rescueProfiles";
 import { useAuth } from "../auth/AuthContext";
+import { AnimalMap } from "../components/AnimalMap";
+import { BreedChart, type BreedSlice } from "../components/BreedChart";
 
 const PAGE_SIZE = 10;
 const ANIMAL_TYPES = ["Dog", "Cat", "Bird", "Livestock", "Other"];
+const TOP_BREEDS = 5;
+
+const breedSlicesFromSummary = (summary: BreedSummary): BreedSlice[] => {
+  const slices = summary.items.map((item) => ({ label: item.breed, count: item.count }));
+  if (summary.other_count > 0) slices.push({ label: "Other", count: summary.other_count });
+  return slices;
+};
+
+const breedSlicesFromMatches = (matchPage: RescueMatchPage): BreedSlice[] => {
+  const counts = new Map<string, number>();
+  for (const match of matchPage.items) {
+    counts.set(match.animal.breed, (counts.get(match.animal.breed) ?? 0) + 1);
+  }
+  const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const slices = sorted
+    .slice(0, TOP_BREEDS)
+    .map(([label, count]): BreedSlice => ({ label, count }));
+  const other = sorted.slice(TOP_BREEDS).reduce((sum, [, count]) => sum + count, 0);
+  if (other > 0) slices.push({ label: "Other", count: other });
+  return slices;
+};
 
 const formatCriteria = (profile: RescueProfile): string => {
   const parts: string[] = [];
@@ -35,6 +58,8 @@ export const DashboardPage = () => {
 
   const [results, setResults] = useState<AnimalPage | null>(null);
   const [matches, setMatches] = useState<RescueMatchPage | null>(null);
+  const [breedSummary, setBreedSummary] = useState<BreedSummary | null>(null);
+  const [selectedAnimalId, setSelectedAnimalId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,6 +89,20 @@ export const DashboardPage = () => {
       .finally(() => setIsLoading(false));
   }, [token, search, page, profileId]);
 
+  // The chart covers the whole filtered set, so it refetches on new searches
+  // but not on page turns.
+  useEffect(() => {
+    if (!token || profileId !== null) return;
+
+    getBreedSummary(token, {
+      q: search.q || undefined,
+      animalType: search.animalType || undefined,
+      limit: TOP_BREEDS,
+    })
+      .then(setBreedSummary)
+      .catch(() => setBreedSummary(null));
+  }, [token, search, profileId]);
+
   useEffect(() => {
     if (!token || profileId === null) return;
 
@@ -80,13 +119,20 @@ export const DashboardPage = () => {
   const handleSearch = (event: FormEvent) => {
     event.preventDefault();
     setPage(1);
+    setSelectedAnimalId(null);
     setSearch({ q: queryInput.trim(), animalType: typeInput });
   };
 
   const handleProfileChange = (value: string) => {
     setPage(1);
+    setSelectedAnimalId(null);
     setMatches(null);
     setProfileId(value ? Number(value) : null);
+  };
+
+  const handlePageChange = (delta: number) => {
+    setSelectedAnimalId(null);
+    setPage((p) => p + delta);
   };
 
   const activePage = profileId === null ? results : matches;
@@ -169,7 +215,11 @@ export const DashboardPage = () => {
             </thead>
             <tbody>
               {results.items.map((animal) => (
-                <tr key={animal.id}>
+                <tr
+                  key={animal.id}
+                  className={animal.id === selectedAnimalId ? "selected-row" : undefined}
+                  onClick={() => setSelectedAnimalId(animal.id)}
+                >
                   <td>{animal.animal_id}</td>
                   <td>{animal.name ?? "—"}</td>
                   <td>{animal.animal_type}</td>
@@ -206,7 +256,11 @@ export const DashboardPage = () => {
             </thead>
             <tbody>
               {matches.items.map((match, index) => (
-                <tr key={match.animal.id}>
+                <tr
+                  key={match.animal.id}
+                  className={match.animal.id === selectedAnimalId ? "selected-row" : undefined}
+                  onClick={() => setSelectedAnimalId(match.animal.id)}
+                >
                   <td>{(matches.page - 1) * matches.page_size + index + 1}</td>
                   <td
                     title={`Breed ${match.breed_score} · Age ${match.age_score} · Sex ${match.sex_score} · Availability ${match.availability_score}`}
@@ -233,15 +287,38 @@ export const DashboardPage = () => {
 
       {!isLoading && activePage && (
         <div className="pagination">
-          <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+          <button type="button" disabled={page <= 1} onClick={() => handlePageChange(-1)}>
             Previous
           </button>
           <span>
             Page {activePage.page} of {totalPages} ({activePage.total} animals)
           </span>
-          <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+          <button type="button" disabled={page >= totalPages} onClick={() => handlePageChange(1)}>
             Next
           </button>
+        </div>
+      )}
+
+      {!isLoading && profileId === null && results && breedSummary && (
+        <div className="dashboard-visuals">
+          <BreedChart
+            slices={breedSlicesFromSummary(breedSummary)}
+            totalAnimals={breedSummary.total_animals}
+          />
+          <AnimalMap animals={results.items} selectedId={selectedAnimalId} />
+        </div>
+      )}
+
+      {!isLoading && profileId !== null && matches && matches.items.length > 0 && (
+        <div className="dashboard-visuals">
+          <BreedChart
+            slices={breedSlicesFromMatches(matches)}
+            totalAnimals={matches.items.length}
+          />
+          <AnimalMap
+            animals={matches.items.map((match) => match.animal)}
+            selectedId={selectedAnimalId}
+          />
         </div>
       )}
     </div>

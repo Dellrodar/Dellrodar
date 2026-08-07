@@ -28,6 +28,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     let cancelled = false;
 
+    // Mark loading before the user fetch so route guards wait for the user
+    // instead of bouncing a fresh login back to the login page.
+    setIsLoading(true);
+
     (async () => {
       try {
         const currentUser = await fetchCurrentUser(token);
