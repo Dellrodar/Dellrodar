@@ -10,9 +10,9 @@ url: https://dellrodar.github.io
 baseurl: /Dellrodar
 
 # Personal info
-name: Your Name # TODO replace with your real name
+name: Emilio Crocco
 title: Software Engineer
-email: ecrocco@skywarditsolutions.com # TODO confirm this is the email you want public
+email: ecrocco@gmail.com
 github_username: Dellrodar
 
 # Dark Mode (true = dark, false = light with toggle, never = light only)
@@ -98,10 +98,13 @@ content:
       - layout: top-right
         title: Southern New Hampshire University
         sub_title: B.S. Computer Science
-        caption: TODO add date range
+        caption: Expected graduation September 2026
         description: |
-          Capstone coursework focused on software design and engineering, algorithms and
-          data structures, and databases, culminating in this ePortfolio.
+          Coursework spanning software development, data structures and algorithms,
+          databases, operating systems, security, and software engineering practices,
+          with projects built in Python, Java, C++, JavaScript, and SQL. The program
+          culminated in the CS 499 capstone presented in this ePortfolio.
+          Student email: emilio.crocco@snhu.edu
 
   - title: Skills
     layout: text

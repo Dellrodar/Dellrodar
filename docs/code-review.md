@@ -10,10 +10,9 @@ the code for areas of improvement, and explains the enhancements planned across 
 three categories: software design and engineering, algorithms and data structures, and
 databases.
 
-<!-- TODO: replace VIDEO_ID with your YouTube video id -->
 <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%;">
   <iframe
-    src="https://www.youtube.com/embed/VIDEO_ID"
+    src="https://www.youtube.com/embed/pd7dArJnuQQ"
     title="CS 499 Code Review"
     style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
