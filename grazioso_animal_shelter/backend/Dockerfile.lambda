@@ -1,0 +1,11 @@
+FROM public.ecr.aws/lambda/python:3.12
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt boto3
+
+COPY alembic.ini ${LAMBDA_TASK_ROOT}/
+COPY alembic ${LAMBDA_TASK_ROOT}/alembic
+COPY app ${LAMBDA_TASK_ROOT}/app
+COPY lambda_migrate.py ${LAMBDA_TASK_ROOT}/
+
+CMD ["lambda_migrate.handler"]
