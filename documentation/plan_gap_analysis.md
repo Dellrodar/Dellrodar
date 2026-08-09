@@ -1,0 +1,146 @@
+# Consolidated Execution Plan
+
+Single source of truth for all remaining work, produced from a full audit of the codebase on 2026-08-09. It replaces `DEPLOYMENT.md`, `IMPROVEMENTS.md`, `PORTFOLIO_TODO.md`, and `Frontend_Improvement_Plan.md`, whose open items are carried forward below. `CS499_Enhancement_Plan.md` stays as the original course enhancement plan; this file tracks what is still open against it.
+
+## Where things stand
+
+Verified implemented in the code as of commit `1232f80`:
+
+- Full-stack monorepo: FastAPI backend, React frontend, Postgres with Alembic migrations 0001 through 0004
+- Auth complete: signup, login, JWT, bcrypt, default viewer role, account-active checks on both login and every authenticated request
+- Normalized schema with four lookup tables, rescue profile tables, and pg_trgm trigram indexing on breed names
+- Rescue-profile matching endpoint with weighted breed/age/sex/availability scoring, ranking, and pagination
+- Animal search by name, breed, and animal ID with type filter and pagination, plus breed-summary endpoint, admin seed script, and idempotent CSV importer
+- Admin user management (list, change role, toggle active) behind `require_role("admin")`
+- MUI migration essentially done: theme with light/dark schemes, AppBar shell with logo and active-route styling, auth cards with password toggle and loading states, dashboard DataGrid with server pagination and page-size selector, outcome chips, match-score progress bars with component-score tooltips, admin panel with Snackbar feedback, self-edit lockout in the UI, and skeleton loading states
+- Global 401 handling: expired tokens clear auth state and redirect to login
+- SPA rewrite in `vercel.json`, so deep links work
+- Deployment live: Vercel (frontend + backend), Neon Postgres, migrations applied, admin seeded, 10000 animals imported, site verified end to end
+- AWS Lambda migration runner built, deployed to us-east-2, and test-invoked
+- Test suites: 6 backend modules (41 tests) and 17 frontend files (~88 cases), including axe accessibility audits
+- Portfolio site: code review page, all three enhancement pages with reflections, profile photo wired up
+
+## Gap analysis
+
+| Source plan | Item | Status |
+|---|---|---|
+| Enhancement plan | Add / update / archive animal endpoints | Missing entirely, no write routes exist |
+| Enhancement plan | Staff role gating animal management | Missing, `staff` role is seeded but guards nothing |
+| Enhancement plan | Archive instead of hard delete | Missing, no archived column in schema |
+| Enhancement plan | Audit logging of admin and animal changes | Missing, no audit table or log calls |
+| Enhancement plan | Admin can remove accounts | Partial, disable exists but no delete endpoint |
+| Enhancement plan | Staff/admin animal management UI flows | Missing, blocked on backend |
+| Pseudocode flows | Animal detail view from search results | Missing, backend detail endpoint exists but no frontend view |
+| Pseudocode flows | Update path via management page with typeahead | Missing, second update path in the flows |
+| Pseudocode flows | Optional filters in match mode | Missing, matches endpoint accepts only pagination |
+| Enhancement plan | Google SSO, staff domain recognition | Deferred stretch, never started |
+| Improvements backlog | Session-expired message on login page | Partial, 401 signs the user out but shows no explanation |
+| Improvements backlog | Session-timeout warning from JWT `exp` | Missing, marked optional |
+| Frontend plan phase 2 | NavBar user Avatar + Menu | Partial, inline Chip + button instead |
+| Frontend plan phase 4 | Breed-summary endpoint accepts a profile | Missing, frontend works around it with `animal_type` |
+| Frontend plan phase 4 | Map scope in match mode | Missing, map shows current page while chart shows full pool |
+| Frontend plan phase 5 | Role/status Chip badges in admin table | Partial, only a "You" chip |
+| Frontend plan phase 6 | Explicit `aria-live` on alerts and snackbar | Missing, relies on MUI defaults |
+| Backend (found in audit) | Self-demotion guard server-side | Missing, UI disables own row but the API allows it |
+| Deployment plan | Vercel deploy webhook triggers Lambda migration | Open stretch |
+| Deployment plan | Terraform port of `deploy_lambda.ps1` | Open stretch |
+| Portfolio TODO | Six self-assessment prose sections | Missing, page is scaffolded with bracketed prompts |
+| Portfolio TODO | Everything else (reflections, photo) | Done |
+
+## Rubric compliance for the final submission
+
+Checked against the CS 499 Final Project Guidelines and Rubric on 2026-08-09. The five course outcomes are graded pass/fail at 20 points each across the whole ePortfolio.
+
+| Rubric requirement | Status |
+|---|---|
+| Code review video present in the ePortfolio, covering existing functionality, code analysis, and planned enhancements | Met, embedded on the code review page with a summary of all three areas |
+| Enhanced artifact accessible | Met, live app plus repo and per-enhancement branch links on every narrative page |
+| Original artifact accessible, "the work before you began your enhancements" | Gap, `grazioso_animal_shelter_dashboard` exists in the repo but no page links to it, a grader would have to hunt |
+| Narrative per artifact: describe, justify, reflect | Met, all three pages follow that structure with trade-offs and outcome alignment |
+| Narrative states when the artifact was created | Gap, pages say "originally built in CS 340" with no term or year |
+| Self-assessment as the first thing presented | Met structurally, it is the first card on the homepage, but the page itself is still a scaffold |
+| Self-assessment addresses the five required topics with examples beyond the artifacts | Gap, this is the workstream 1 prose |
+| Self-assessment summarizes how the artifacts fit together | Met, that section is already written on the page |
+| GitHub Pages organized and navigable, not raw file listings | Met, resume theme with card navigation to every component |
+| Claims in narratives match the code | Risk, enhancement one and enhancement three both claim archive behavior that does not exist in the code |
+
+Course outcome evidence map: outcome 3 (algorithms and trade-offs) is strongly covered by enhancement two, outcome 4 (tools and value) by enhancements one and three plus tests and deployment, outcome 5 (security) by the implemented auth/RBAC/validation, but outcomes 1 (collaboration) and 2 (communication) are claimed by no enhancement page and rest almost entirely on the code review video plus the unwritten self-assessment sections. Finishing the self-assessment is what closes outcomes 1 and 2.
+
+## Workstream 1: Portfolio completion (course-critical, do first)
+
+- [ ] Write the six self-assessment sections in `docs/self-assessment.md`, replacing the bracketed prompts for background, team collaboration, stakeholder communication, data structures and algorithms, software engineering and databases, and security
+- [ ] Remove the structural-draft TODO comment at the top of that file
+- [ ] Commit the staged `docs/_config.yml` change that deep-links the Projects card to `grazioso_animal_shelter`
+- [x] Confirm `docs/_site` is gitignored so stale local builds never publish, verified 2026-08-09 via `docs/.gitignore`
+- [ ] Resolve the archive claim: either implement workstream 2 before final submission or reword the security bullets on enhancement one and enhancement three so every claim matches the code
+- [ ] Add an "Original artifact" link on the enhancement pages and the homepage Projects card pointing to `grazioso_animal_shelter_dashboard` so the pre-enhancement work is one click away
+- [ ] Add when the artifact was created (course term and year) to the artifact description on each enhancement page
+- [ ] Course submission logistics outside the repo: narratives saved as Word documents, all original and enhanced code files, the self-assessment, the video, and the GitHub Pages URL submitted in Brightspace
+
+## Workstream 2: Backend animal management
+
+The largest unimplemented piece of the enhancement plan. The staff role, the add/update/archive flows, and archive-not-delete behavior all depend on it.
+
+- [ ] Migration 0005 adding an `archived_at` timestamp (null means active) to `animals`
+- [ ] `POST /animals` to create a record, validating lookup values, restricted to staff and admin via `require_role`
+- [ ] `PATCH /animals/{id}` to update a record, same restriction
+- [ ] Archive endpoint (for example `POST /animals/{id}/archive` with an unarchive counterpart), same restriction
+- [ ] Exclude archived animals from default search and match results, keep them retrievable for audit
+- [ ] Backend tests for create, update, archive, role gating, and archived-record exclusion
+
+## Workstream 3: Backend hardening and audit logging
+
+- [ ] Server-side self-change guard: reject role or status changes targeting the acting admin's own account, matching what the UI already prevents
+- [ ] Audit logging for admin and animal mutations, a simple `audit_log` table with actor, action, target, and timestamp satisfies the enhancement plan
+- [ ] Decide on account removal: either add `DELETE /admin/users/{id}` or document disable-only as the intentional design (recommended, it preserves audit history)
+
+## Workstream 4: Frontend session expiry
+
+The 401 plumbing already exists in `client.ts` and `AuthContext.tsx`; this is the last mile.
+
+- [ ] Pass a session-expired reason through navigation state when the 401 handler signs the user out, and render it as an Alert on `LoginPage`
+- [ ] Optional: decode the JWT `exp` claim and warn shortly before expiry or log out proactively
+
+## Workstream 5: Frontend visual gaps (former phases 4 and 6)
+
+- [ ] Extend `GET /animals/breed-summary` to accept a rescue-profile parameter so the match-mode chart covers the true candidate pool, then drop the `animal_type` workaround in `DashboardPage`
+- [ ] Resolve the map scope inconsistency in match mode: either fetch the full match set for the map or label both visuals as page-scoped
+- [ ] Add explicit `aria-live` (or `role="status"`) to the auth-form alerts and the admin Snackbar, then keyboard-walk each page
+- [ ] Manual contrast check of muted text tokens in both schemes, the axe tests cannot cover this in jsdom
+
+## Workstream 6: Animal management UI (after workstream 2)
+
+Implements the Staff Animal Management flows from the pseudocode.
+
+- [ ] Add Animal entry in the navigation for staff and admin, opening a form with lookup-value selects and validation
+- [ ] Edit icon on dashboard search rows for staff and admin, loading the record into an edit page with all fields
+- [ ] Animal management page with typeahead search that loads the selected record into the same update form, the second update path in the flows
+- [ ] Animal detail view when any user selects a search result, completing the general search flow, the backend detail endpoint already exists
+- [ ] Archive action with a confirmation dialog
+- [ ] Frontend tests for the new flows and role-based visibility
+
+## Workstream 7: Deployment stretch (optional)
+
+- [ ] Vercel deploy webhook to a Lambda Function URL so migrations run on deploy
+- [ ] Port `deploy_lambda.ps1` to Terraform, declaring the ECR repo, secret, IAM role, and function, keeping image build/push as a script step
+
+## Deferred, revisit only if time allows
+
+- Google SSO and staff-domain recognition (enhancement plan stretch goals)
+- Optional filters in match mode, the flows call for them but the matches endpoint currently accepts only pagination
+- NavBar user menu as Avatar + Menu instead of the current Chip and button
+- Role/status Chip badges in the admin table
+- Bar-list alternative when the "Other" slice dominates the breed donut
+- Replacing the custom SVG chart with a chart library
+
+## Deployment reference
+
+Operational facts carried forward from the retired deployment plan. Real connection strings live as comments in the gitignored root `.env`; never paste them here.
+
+- Vercel hosts both services from `grazioso_animal_shelter/vercel.json`, the Vite frontend at `/` and FastAPI behind `/api`; database is Neon free-tier Postgres
+- Neon direct host `ep-gentle-snow-axjivv0v.c-4.us-east-2.aws.neon.tech`, pooler host `ep-gentle-snow-axjivv0v-pooler.c-4.us-east-2.aws.neon.tech`, database `neondb`, role `neondb_owner`, us-east-2
+- asyncpg rejects Neon's default `?sslmode=require&channel_binding=require`, use `?ssl=require` instead
+- The app connects through the pooler because serverless functions open many short-lived connections; migrations use the direct endpoint because Alembic holds session-level locks that pooling can interfere with
+- Live admin login is `admin@grazioso-shelter.dev` with the `ADMIN_PASSWORD` from the root `.env`; login verifies against the seeded database hash, not the Vercel env var, so reseed or update the user row to change it
+- Lambda migration runner: `lambda_migrate.py`, `Dockerfile.lambda`, and `deploy_lambda.ps1` in `grazioso_animal_shelter/backend/`; stack lives in account 363454423518, us-east-2; `DATABASE_URL` is read from Secrets Manager secret `grazioso/database-url` at cold start; cost is about $0.40/mo plus pennies per invocation
+- Windows deploy gotchas baked into the script: a PowerShell 5.1 pipe corrupts the ECR login token so the login runs through cmd, and docker provenance/sbom attestations are disabled because Lambda rejects a manifest list

@@ -92,7 +92,7 @@ content:
           review ranked candidates in a dashboard with a results table, breed distribution
           chart, and location map. Built with FastAPI, React, and PostgreSQL, with
           role-based access for viewer, staff, and admin users.
-          [View the source on GitHub](https://github.com/Dellrodar/Dellrodar).
+          [View the source on GitHub](https://github.com/Dellrodar/Dellrodar/tree/main/grazioso_animal_shelter).
 
   - title: Education
     layout: list
