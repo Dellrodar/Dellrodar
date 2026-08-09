@@ -48,19 +48,6 @@ body {
   margin-top: 0;
 }
 
-.notice {
-  margin-top: 16px;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  opacity: 0.85;
-}
-
-.search-bar label {
-  font-size: 14px;
-  align-self: center;
-}
-
 input {
   padding: 8px;
   border: 1px solid var(--border);
@@ -98,12 +85,6 @@ table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 16px;
-  transition: opacity 0.15s ease;
-}
-
-table[aria-busy="true"] {
-  opacity: 0.6;
-  pointer-events: none;
 }
 
 th,
@@ -111,23 +92,6 @@ td {
   text-align: left;
   padding: 8px;
   border-bottom: 1px solid var(--border);
-}
-
-.search-bar {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.search-bar input[type="text"] {
-  flex: 1;
-}
-
-.pagination {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 16px;
 }
 
 .dashboard-visuals {
@@ -220,12 +184,4 @@ td {
 .animal-map-canvas {
   height: 280px;
   border-radius: 4px;
-}
-
-tbody tr {
-  cursor: pointer;
-}
-
-tbody tr.selected-row {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
