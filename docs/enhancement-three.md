@@ -51,5 +51,6 @@ add cost without adding integrity, which was itself a documented design decision
 [TODO: Add your personal reflection — what you learned, what challenged you, and what
 feedback shaped the work.]
 
-**Artifact links:** [Repository](https://github.com/Dellrodar/Dellrodar) &middot;
+**Artifact links:** [Live application](https://dellrodar.vercel.app) &middot;
+[Repository](https://github.com/Dellrodar/Dellrodar) &middot;
 [Enhancement branch](https://github.com/Dellrodar/Dellrodar/tree/enhancement-three)

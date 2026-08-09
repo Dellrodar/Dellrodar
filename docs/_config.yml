@@ -81,8 +81,8 @@ content:
     content:
       - layout: top-middle
         title: Grazioso Animal Shelter Full-Stack Application
-        link: https://github.com/Dellrodar/Dellrodar
-        link_text: View on GitHub
+        link: https://dellrodar.vercel.app
+        link_text: Try the live app
         quote: >
           CS 499 capstone enhancement of the CS 340 animal shelter dashboard
         description: |
@@ -91,6 +91,7 @@ content:
           review ranked candidates in a dashboard with a results table, breed distribution
           chart, and location map. Built with FastAPI, React, and PostgreSQL, with
           role-based access for viewer, staff, and admin users.
+          [View the source on GitHub](https://github.com/Dellrodar/Dellrodar).
 
   - title: Education
     layout: list
