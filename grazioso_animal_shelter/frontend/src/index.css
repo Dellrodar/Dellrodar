@@ -1,10 +1,6 @@
 :root {
   --text: #2b2b33;
   --bg: #ffffff;
-  --border: #e2e2e6;
-  --accent: #7a3bff;
-  --accent-contrast: #ffffff;
-  --danger: #c0392b;
   --sans: system-ui, "Segoe UI", Roboto, sans-serif;
 
   /* Categorical chart palette, CVD-validated fixed order. */
@@ -25,9 +21,6 @@
   :root {
     --text: #e5e5ea;
     --bg: #16171d;
-    --border: #33343d;
-    --accent: #a67bff;
-    --accent-contrast: #16171d;
     --series-1: #3987e5;
     --series-2: #d95926;
     --series-3: #199e70;

@@ -1,13 +1,13 @@
 import { createTheme } from "@mui/material/styles";
 
-// Palette values mirror the tokens in index.css so MUI components and the
-// remaining hand-styled elements share one look during the migration.
+// Primary is the crimson sampled from the Grazioso Salvare logo (#C9134B),
+// lightened for dark mode to keep AA contrast against the dark background.
 export const theme = createTheme({
   cssVariables: { colorSchemeSelector: "media" },
   colorSchemes: {
     light: {
       palette: {
-        primary: { main: "#7a3bff" },
+        primary: { main: "#c9134b" },
         error: { main: "#c0392b" },
         background: { default: "#ffffff" },
         text: { primary: "#2b2b33" },
@@ -16,7 +16,7 @@ export const theme = createTheme({
     },
     dark: {
       palette: {
-        primary: { main: "#a67bff" },
+        primary: { main: "#e06287" },
         error: { main: "#c0392b" },
         background: { default: "#16171d", paper: "#16171d" },
         text: { primary: "#e5e5ea" },
