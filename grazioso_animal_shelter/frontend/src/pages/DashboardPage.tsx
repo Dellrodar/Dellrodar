@@ -10,6 +10,7 @@ import {
 import { useAuth } from "../auth/AuthContext";
 import { AnimalMap } from "../components/AnimalMap";
 import { BreedChart, type BreedSlice } from "../components/BreedChart";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 const PAGE_SIZE = 10;
 const ANIMAL_TYPES = ["Dog", "Cat", "Bird", "Livestock", "Other"];
@@ -46,6 +47,7 @@ const formatCriteria = (profile: RescueProfile): string => {
 };
 
 export const DashboardPage = () => {
+  usePageTitle("Dashboard");
   const { user, token } = useAuth();
 
   const [queryInput, setQueryInput] = useState("");

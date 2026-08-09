@@ -4,8 +4,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { signup } from "../api/auth";
 import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 export const SignupPage = () => {
+  usePageTitle("Sign up");
   const { login } = useAuth();
   const navigate = useNavigate();
 

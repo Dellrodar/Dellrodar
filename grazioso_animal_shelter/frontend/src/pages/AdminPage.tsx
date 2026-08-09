@@ -3,10 +3,12 @@ import { listUsers, updateUserRole, updateUserStatus } from "../api/admin";
 import type { Role, User } from "../api/auth";
 import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 const ROLES: Role[] = ["viewer", "staff", "admin"];
 
 export const AdminPage = () => {
+  usePageTitle("Admin Panel");
   const { token } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);

@@ -3,8 +3,10 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 export const LoginPage = () => {
+  usePageTitle("Log in");
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
