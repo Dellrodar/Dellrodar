@@ -1,6 +1,7 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { act } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { apiClient } from "../../src/api/client";
 import { AuthProvider, useAuth } from "../../src/auth/AuthContext";
 
 vi.mock("../../src/api/auth", () => ({
@@ -113,6 +114,40 @@ describe("AuthProvider / useAuth", () => {
     expect(result.current.user).toBeNull();
     expect(result.current.token).toBeNull();
     expect(localStorage.getItem("grazioso.token")).toBeNull();
+  });
+
+  it("logs and signs out when an authenticated request returns 401", async () => {
+    localStorage.setItem("grazioso.token", "existing-token");
+    vi.mocked(fetchCurrentUser).mockResolvedValue(mockUser);
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ detail: "Not authenticated" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+
+    try {
+      const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+      await waitFor(() => expect(result.current.user).toEqual(mockUser));
+
+      await act(async () => {
+        await expect(apiClient.get("/animals", "existing-token")).rejects.toMatchObject({
+          status: 401,
+        });
+      });
+
+      expect(result.current.user).toBeNull();
+      expect(result.current.token).toBeNull();
+      expect(localStorage.getItem("grazioso.token")).toBeNull();
+      expect(warnSpy).toHaveBeenCalledWith("Session is no longer valid; signing out.");
+    } finally {
+      vi.unstubAllGlobals();
+      warnSpy.mockRestore();
+    }
   });
 
   it("throws when useAuth is called outside an AuthProvider", () => {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError, apiClient } from "../../src/api/client";
+import { ApiError, apiClient, setUnauthorizedHandler } from "../../src/api/client";
 
 const jsonResponse = (body: unknown, init: { status?: number } = {}) =>
   new Response(JSON.stringify(body), {
@@ -13,6 +13,7 @@ describe("apiClient", () => {
   });
 
   afterEach(() => {
+    setUnauthorizedHandler(null);
     vi.unstubAllGlobals();
   });
 
@@ -76,6 +77,46 @@ describe("apiClient", () => {
     vi.mocked(fetch).mockResolvedValue(jsonResponse({ detail: "nope" }, { status: 403 }));
 
     await expect(apiClient.get("/forbidden")).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it("notifies the unauthorized handler when an authenticated request gets a 401", async () => {
+    const onUnauthorized = vi.fn();
+    setUnauthorizedHandler(onUnauthorized);
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse({ detail: "Not authenticated" }, { status: 401 }),
+    );
+
+    await expect(apiClient.get("/animals", "expired-token")).rejects.toMatchObject({
+      status: 401,
+    });
+
+    expect(onUnauthorized).toHaveBeenCalledOnce();
+  });
+
+  it("does not notify the unauthorized handler for a 401 without a token", async () => {
+    const onUnauthorized = vi.fn();
+    setUnauthorizedHandler(onUnauthorized);
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse({ detail: "Invalid email or password" }, { status: 401 }),
+    );
+
+    await expect(
+      apiClient.post("/auth/login", { email: "x", password: "y" }),
+    ).rejects.toMatchObject({ status: 401 });
+
+    expect(onUnauthorized).not.toHaveBeenCalled();
+  });
+
+  it("does not notify the unauthorized handler for other error statuses", async () => {
+    const onUnauthorized = vi.fn();
+    setUnauthorizedHandler(onUnauthorized);
+    vi.mocked(fetch).mockResolvedValue(jsonResponse({ detail: "nope" }, { status: 403 }));
+
+    await expect(apiClient.get("/admin/users", "viewer-token")).rejects.toMatchObject({
+      status: 403,
+    });
+
+    expect(onUnauthorized).not.toHaveBeenCalled();
   });
 
   it("returns undefined for a 204 No Content response", async () => {
