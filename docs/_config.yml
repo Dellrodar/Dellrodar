@@ -1,0 +1,135 @@
+# Jekyll configuration for the CS 499 ePortfolio
+# Theme: https://github.com/sproogen/modern-resume-theme (loaded as a remote theme)
+
+remote_theme: sproogen/modern-resume-theme
+
+# Site
+repository: Dellrodar/Dellrodar
+version: 2
+url: https://dellrodar.github.io
+baseurl: /Dellrodar
+
+# Personal info
+name: Emilio Crocco
+title: Software Engineer
+email: ecrocco@gmail.com
+github_username: Dellrodar
+
+# Dark Mode (true = dark, false = light with toggle, never = light only)
+darkmode: false
+
+# About Section
+about_profile_image: images/profile.jpg
+about_content: |
+  Hi, I'm Emilio Crocco, a full-stack software engineer completing my B.S. in Computer
+  Science at Southern New Hampshire University. I build web applications end to end,
+  from React frontends through API design to relational data modeling, with a focus on
+  security, maintainability, and clear documentation. This portfolio showcases work
+  completed during the course of my degree program, including a capstone that modernized
+  a legacy dashboard into a full-stack application with FastAPI, React, and PostgreSQL.
+
+content:
+  - title: My Portfolio
+    layout: list
+    content:
+      - layout: left
+        border: weak
+        title: Professional Self-Assessment
+        link: /Dellrodar/self-assessment/
+        link_text: Read the self-assessment
+        description: |
+          A reflection on my growth through the Computer Science program and how the
+          capstone artifacts demonstrate my strengths across collaboration, communication,
+          algorithms, software engineering, and security.
+      - layout: left
+        border: weak
+        title: Code Review
+        link: /Dellrodar/code-review/
+        link_text: Watch the code review
+        description: |
+          A walkthrough of the original CS 340 artifact covering existing functionality,
+          code analysis, and the planned enhancements across all three categories.
+      - layout: left
+        border: weak
+        title: "Enhancement One: Software Design and Engineering"
+        link: /Dellrodar/enhancement-one/
+        link_text: Read the narrative
+        description: |
+          Restructured the original Flask dashboard into a full-stack monorepo with a
+          FastAPI backend, a React frontend, separated service and data-access layers,
+          and role-based authentication and authorization.
+      - layout: left
+        border: weak
+        title: "Enhancement Two: Algorithms and Data Structures"
+        link: /Dellrodar/enhancement-two/
+        link_text: Read the narrative
+        description: |
+          Replaced hard-coded rescue filtering with database-driven rescue profiles and a
+          scoring algorithm that ranks candidate animals using PostgreSQL trigram
+          similarity for flexible breed matching.
+      - layout: left
+        border: weak
+        title: "Enhancement Three: Databases"
+        link: /Dellrodar/enhancement-three/
+        link_text: Read the narrative
+        description: |
+          Migrated the data layer to a normalized PostgreSQL schema with lookup tables,
+          user and role tables, rescue profile tables, migrations, constraints, and
+          indexes, including trigram indexing to support similarity matching.
+
+  - title: Projects
+    layout: list
+    content:
+      - layout: top-middle
+        title: Grazioso Animal Shelter Full-Stack Application
+        link: https://dellrodar.vercel.app
+        link_text: Try the live app
+        quote: >
+          CS 499 capstone enhancement of the CS 340 animal shelter dashboard
+        description: |
+          A scoped full-stack application that helps Grazioso Salvare identify rescue-dog
+          candidates. Authenticated users search shelter data, select rescue profiles, and
+          review ranked candidates in a dashboard with a results table, breed distribution
+          chart, and location map. Built with FastAPI, React, and PostgreSQL, with
+          role-based access for viewer, staff, and admin users.
+          [View the source on GitHub](https://github.com/Dellrodar/Dellrodar).
+
+  - title: Education
+    layout: list
+    content:
+      - layout: top-right
+        title: Southern New Hampshire University
+        sub_title: B.S. Computer Science
+        caption: Expected graduation September 2026
+        description: |
+          Coursework spanning software development, data structures and algorithms,
+          databases, operating systems, security, and software engineering practices,
+          with projects built in Python, Java, C++, JavaScript, and SQL. The program
+          culminated in the CS 499 capstone presented in this ePortfolio.
+          Student email: emilio.crocco@snhu.edu
+
+  - title: Skills
+    layout: text
+    content: |
+      Python, FastAPI, JavaScript, TypeScript, React, PostgreSQL, SQL, REST API design,
+      authentication and role-based authorization, database design and migrations,
+      automated testing, Git, and technical documentation.
+
+# Footer
+footer_show_references: false
+
+# Build settings
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - docker-compose.yml
+  - vendor
+  - .bundle
+
+plugins:
+  - jekyll-seo-tag
+  - jekyll-remote-theme
+
+sass:
+  sass_dir: _sass
+  style: compressed
