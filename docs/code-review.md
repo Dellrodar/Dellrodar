@@ -22,9 +22,9 @@ databases.
 
 ## What the Review Covers
 
-- **Existing functionality** — the original Flask-based dashboard that filtered animal
+- **Existing functionality**: the original Flask-based dashboard that filtered animal
   records for rescue-profile candidates, with breed visualizations and location data.
-- **Code analysis** — tightly coupled logic, hard-coded rescue criteria, limited
+- **Code analysis**: tightly coupled logic, hard-coded rescue criteria, limited
   validation, and the absence of authentication or role-based access.
-- **Planned enhancements** — the full-stack modernization, the database-driven matching
+- **Planned enhancements**: the full-stack modernization, the database-driven matching
   algorithm with trigram breed similarity, and the normalized PostgreSQL schema.

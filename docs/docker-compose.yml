@@ -2,8 +2,8 @@
 # Run from the docs/ folder:  docker compose up
 # First run pulls ruby:3.3 and installs gems; later runs reuse vendor/bundle.
 # Site serves at http://localhost:4000/Dellrodar/
-# Page edits livereload automatically, but Jekyll never reloads _config.yml —
-# after config changes run:  docker compose restart site
+# Page edits livereload automatically, but Jekyll never reloads _config.yml.
+# After config changes run:  docker compose restart site
 services:
   site:
     image: ruby:3.3
