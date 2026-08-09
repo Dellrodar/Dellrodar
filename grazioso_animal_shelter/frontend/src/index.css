@@ -135,6 +135,12 @@ table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 16px;
+  transition: opacity 0.15s ease;
+}
+
+table[aria-busy="true"] {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 th,

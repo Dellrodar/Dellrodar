@@ -199,11 +199,11 @@ export const DashboardPage = () => {
       )}
 
       {error && <p className="form-error">{error}</p>}
-      {isLoading && <p>Loading animals...</p>}
+      {isLoading && !activePage && <p>Loading animals...</p>}
 
-      {!isLoading && profileId === null && results && (
+      {profileId === null && results && (
         <>
-          <table>
+          <table aria-busy={isLoading}>
             <thead>
               <tr>
                 <th>Animal ID</th>
@@ -241,9 +241,9 @@ export const DashboardPage = () => {
         </>
       )}
 
-      {!isLoading && profileId !== null && matches && (
+      {profileId !== null && matches && (
         <>
-          <table>
+          <table aria-busy={isLoading}>
             <thead>
               <tr>
                 <th>Rank</th>
@@ -287,21 +287,29 @@ export const DashboardPage = () => {
         </>
       )}
 
-      {!isLoading && activePage && (
+      {activePage && (
         <div className="pagination">
-          <button type="button" disabled={page <= 1} onClick={() => handlePageChange(-1)}>
+          <button
+            type="button"
+            disabled={page <= 1 || isLoading}
+            onClick={() => handlePageChange(-1)}
+          >
             Previous
           </button>
           <span>
             Page {activePage.page} of {totalPages} ({activePage.total} animals)
           </span>
-          <button type="button" disabled={page >= totalPages} onClick={() => handlePageChange(1)}>
+          <button
+            type="button"
+            disabled={page >= totalPages || isLoading}
+            onClick={() => handlePageChange(1)}
+          >
             Next
           </button>
         </div>
       )}
 
-      {!isLoading && profileId === null && results && breedSummary && (
+      {profileId === null && results && breedSummary && (
         <div className="dashboard-visuals">
           <BreedChart
             slices={breedSlicesFromSummary(breedSummary)}
@@ -311,7 +319,7 @@ export const DashboardPage = () => {
         </div>
       )}
 
-      {!isLoading && profileId !== null && matches && matches.items.length > 0 && (
+      {profileId !== null && matches && matches.items.length > 0 && (
         <div className="dashboard-visuals">
           <BreedChart
             slices={breedSlicesFromMatches(matches)}
