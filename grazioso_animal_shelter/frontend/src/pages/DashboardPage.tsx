@@ -137,20 +137,6 @@ const breedSlicesFromSummary = (summary: BreedSummary): BreedSlice[] => {
   return slices;
 };
 
-const breedSlicesFromMatches = (matchPage: RescueMatchPage): BreedSlice[] => {
-  const counts = new Map<string, number>();
-  for (const match of matchPage.items) {
-    counts.set(match.animal.breed, (counts.get(match.animal.breed) ?? 0) + 1);
-  }
-  const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  const slices = sorted
-    .slice(0, TOP_BREEDS)
-    .map(([label, count]): BreedSlice => ({ label, count }));
-  const other = sorted.slice(TOP_BREEDS).reduce((sum, [, count]) => sum + count, 0);
-  if (other > 0) slices.push({ label: "Other", count: other });
-  return slices;
-};
-
 const formatCriteria = (profile: RescueProfile): string => {
   const parts: string[] = [];
   if (profile.preferred_sex) parts.push(profile.preferred_sex);
@@ -207,19 +193,27 @@ export const DashboardPage = () => {
       .finally(() => setIsLoading(false));
   }, [token, search, page, pageSize, profileId]);
 
-  // The chart covers the whole filtered set, so it refetches on new searches
-  // but not on page turns.
+  // The chart covers the whole filtered set — or, in match mode, the profile's
+  // full candidate pool (every animal of its type) — so it refetches on new
+  // searches and profile changes but not on page turns.
   useEffect(() => {
-    if (!token || profileId !== null) return;
+    if (!token) return;
 
-    getBreedSummary(token, {
-      q: search.q || undefined,
-      animalType: search.animalType || undefined,
-      limit: TOP_BREEDS,
-    })
+    const profile = profileId === null ? null : profiles.find((p) => p.id === profileId);
+    if (profileId !== null && !profile) return;
+
+    const params = profile
+      ? { animalType: profile.animal_type, limit: TOP_BREEDS }
+      : {
+          q: search.q || undefined,
+          animalType: search.animalType || undefined,
+          limit: TOP_BREEDS,
+        };
+
+    getBreedSummary(token, params)
       .then(setBreedSummary)
       .catch(() => setBreedSummary(null));
-  }, [token, search, profileId]);
+  }, [token, search, profileId, profiles]);
 
   useEffect(() => {
     if (!token || profileId === null) return;
@@ -417,11 +411,11 @@ export const DashboardPage = () => {
         </div>
       )}
 
-      {profileId !== null && matches && matches.items.length > 0 && (
+      {profileId !== null && matches && matches.items.length > 0 && breedSummary && (
         <div className="dashboard-visuals">
           <BreedChart
-            slices={breedSlicesFromMatches(matches)}
-            totalAnimals={matches.items.length}
+            slices={breedSlicesFromSummary(breedSummary)}
+            totalAnimals={breedSummary.total_animals}
           />
           <AnimalMap
             animals={matches.items.map((match) => match.animal)}

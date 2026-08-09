@@ -270,7 +270,7 @@ describe("DashboardPage", () => {
     });
   });
 
-  it("charts the visible matches when a rescue profile is selected", async () => {
+  it("charts the profile's full candidate pool when a rescue profile is selected", async () => {
     const user = userEvent.setup();
     mockSearchAnimals.mockResolvedValue(pageOf([animal()]));
     mockSearchRescueMatches.mockResolvedValue({
@@ -284,27 +284,27 @@ describe("DashboardPage", () => {
           sex_score: 20,
           availability_score: 10,
         },
-        {
-          animal: animal({ id: 2, animal_id: "A000002", name: "Rex" }),
-          score: 90,
-          breed_score: 50,
-          age_score: 20,
-          sex_score: 20,
-          availability_score: 0,
-        },
       ],
-      total: 2,
+      total: 5589,
       page: 1,
       page_size: 10,
     });
     render(<DashboardPage />);
     await screen.findByText("Bella");
 
+    mockGetBreedSummary.mockResolvedValue({
+      items: [{ breed: "Labrador Retriever Mix", count: 608 }],
+      other_count: 4981,
+      total_animals: 5589,
+    });
     await selectOption(user, /Rescue profile/, "Water Rescue");
 
     expect(await screen.findByText("Breed distribution")).toBeInTheDocument();
-    expect(screen.getByText("2 · 100%")).toBeInTheDocument();
-    expect(mockGetBreedSummary).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText("608 · 11%")).toBeInTheDocument();
+    expect(mockGetBreedSummary).toHaveBeenLastCalledWith("user-token", {
+      animalType: "Dog",
+      limit: 5,
+    });
   });
 
   it("maps the visible animals and selects one on row click", async () => {

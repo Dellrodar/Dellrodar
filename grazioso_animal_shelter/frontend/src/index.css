@@ -44,73 +44,11 @@ body {
   margin: 0;
 }
 
-.page h1 {
-  margin-top: 0;
-}
-
-input {
-  padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--bg);
-  color: var(--text);
-  font-size: 15px;
-}
-
-button {
-  padding: 8px 16px;
-  border: 1px solid var(--accent);
-  border-radius: 4px;
-  background: var(--accent);
-  color: var(--accent-contrast);
-  font-size: 15px;
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-a {
-  color: var(--accent);
-}
-
-.form-error {
-  color: var(--danger);
-  font-size: 14px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 16px;
-}
-
-th,
-td {
-  text-align: left;
-  padding: 8px;
-  border-bottom: 1px solid var(--border);
-}
-
 .dashboard-visuals {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 16px;
   margin-top: 24px;
-}
-
-.breed-chart {
-  margin: 0;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
-
-.breed-chart figcaption {
-  font-weight: 600;
-  margin-bottom: 8px;
 }
 
 .breed-chart svg {
@@ -169,19 +107,8 @@ td {
   white-space: nowrap;
 }
 
-.animal-map {
-  margin: 0;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
-
-.animal-map figcaption {
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
 .animal-map-canvas {
-  height: 280px;
+  flex: 1;
+  min-height: 280px;
   border-radius: 4px;
 }

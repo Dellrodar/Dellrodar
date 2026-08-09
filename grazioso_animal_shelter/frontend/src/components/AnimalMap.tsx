@@ -1,4 +1,6 @@
 import "leaflet/dist/leaflet.css";
+import Card from "@mui/material/Card";
+import Typography from "@mui/material/Typography";
 import { useEffect } from "react";
 import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 import type { Animal } from "../api/animals";
@@ -41,10 +43,17 @@ export const AnimalMap = ({ animals, selectedId }: AnimalMapProps) => {
   const selected = points.find((point) => point.animal.id === selectedId);
 
   return (
-    <figure className="animal-map">
-      <figcaption>Locations</figcaption>
+    <Card
+      variant="outlined"
+      component="figure"
+      className="animal-map"
+      sx={{ m: 0, p: 2, height: "100%", display: "flex", flexDirection: "column", gap: 1 }}
+    >
+      <Typography component="figcaption" sx={{ fontWeight: 600 }}>
+        Locations
+      </Typography>
       {points.length === 0 ? (
-        <p>No location data to map.</p>
+        <Typography color="text.secondary">No location data to map.</Typography>
       ) : (
         <MapContainer
           center={DEFAULT_CENTER}
@@ -78,6 +87,6 @@ export const AnimalMap = ({ animals, selectedId }: AnimalMapProps) => {
           })}
         </MapContainer>
       )}
-    </figure>
+    </Card>
   );
 };
