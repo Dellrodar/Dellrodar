@@ -1,3 +1,4 @@
+import Container from "@mui/material/Container";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { RequireAuth } from "../auth/RequireAuth";
 import { RequireRole } from "../auth/RequireRole";
@@ -11,7 +12,7 @@ import { SignupPage } from "../pages/SignupPage";
 export const AppRouter = () => (
   <>
     <NavBar />
-    <main>
+    <Container component="main" maxWidth="lg" sx={{ py: 4 }}>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/login" element={<LoginPage />} />
@@ -35,6 +36,6 @@ export const AppRouter = () => (
         />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
-    </main>
+    </Container>
   </>
 );

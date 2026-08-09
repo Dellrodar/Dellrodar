@@ -11,6 +11,16 @@ export class ApiError extends Error {
   }
 }
 
+type UnauthorizedHandler = () => void;
+
+let unauthorizedHandler: UnauthorizedHandler | null = null;
+
+// Registered by AuthProvider so an expired or revoked session detected by any
+// request clears auth state app-wide instead of stranding the current page.
+export const setUnauthorizedHandler = (handler: UnauthorizedHandler | null) => {
+  unauthorizedHandler = handler;
+};
+
 const request = async <TResponse>(
   path: string,
   options: { method?: string; body?: unknown; token?: string | null } = {},
@@ -36,6 +46,11 @@ const request = async <TResponse>(
       .json()
       .then((data: { detail?: string }) => data.detail)
       .catch(() => undefined);
+    // A 401 on a request that carried a token means the session is no longer
+    // valid. A 401 without one (e.g. a failed login) is the caller's to handle.
+    if (response.status === 401 && token) {
+      unauthorizedHandler?.();
+    }
     throw new ApiError(response.status, detail ?? `Request failed with status ${response.status}`);
   }
 

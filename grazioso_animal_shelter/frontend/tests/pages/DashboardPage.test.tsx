@@ -71,6 +71,16 @@ const pageOf = (items: Animal[], total = items.length, page = 1) => ({
   page_size: 10,
 });
 
+// MUI Select renders a combobox button that opens a listbox, not a native select.
+const selectOption = async (
+  user: ReturnType<typeof userEvent.setup>,
+  comboboxName: RegExp,
+  optionName: string,
+) => {
+  await user.click(screen.getByRole("combobox", { name: comboboxName }));
+  await user.click(await screen.findByRole("option", { name: optionName }));
+};
+
 const emptySummary = { items: [], other_count: 0, total_animals: 0 };
 
 describe("DashboardPage", () => {
@@ -107,7 +117,7 @@ describe("DashboardPage", () => {
     await screen.findByText("Bella");
 
     await user.type(screen.getByLabelText("Search animals"), "shepherd");
-    await user.selectOptions(screen.getByLabelText("Animal type"), "Dog");
+    await selectOption(user, /Animal type/, "Dog");
     await user.click(screen.getByRole("button", { name: "Search" }));
 
     expect(mockSearchAnimals).toHaveBeenLastCalledWith("user-token", {
@@ -124,11 +134,11 @@ describe("DashboardPage", () => {
     render(<DashboardPage />);
     await screen.findByText("Bella");
 
-    expect(screen.getByText("Page 1 of 3 (25 animals)")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+    expect(screen.getByText("1–10 of 25")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Go to previous page" })).toBeDisabled();
 
     mockSearchAnimals.mockResolvedValue(pageOf([animal({ id: 11, name: "Max" })], 25, 2));
-    await user.click(screen.getByRole("button", { name: "Next" }));
+    await user.click(screen.getByRole("button", { name: "Go to next page" }));
 
     expect(await screen.findByText("Max")).toBeInTheDocument();
     expect(mockSearchAnimals).toHaveBeenLastCalledWith(
@@ -188,7 +198,7 @@ describe("DashboardPage", () => {
     render(<DashboardPage />);
     await screen.findByText("Bella");
 
-    await user.selectOptions(screen.getByLabelText("Rescue profile:"), "1");
+    await selectOption(user, /Rescue profile/, "Water Rescue");
 
     expect(await screen.findByText("100")).toBeInTheDocument();
     expect(screen.getByText("52.5")).toBeInTheDocument();
@@ -218,10 +228,10 @@ describe("DashboardPage", () => {
     render(<DashboardPage />);
     await screen.findByText("Bella");
 
-    await user.selectOptions(screen.getByLabelText("Rescue profile:"), "1");
+    await selectOption(user, /Rescue profile/, "Water Rescue");
     expect(await screen.findByText("No candidates found for this profile.")).toBeInTheDocument();
 
-    await user.selectOptions(screen.getByLabelText("Rescue profile:"), "");
+    await selectOption(user, /Rescue profile/, "All animals");
     expect(await screen.findByText("Bella")).toBeInTheDocument();
     expect(screen.getByLabelText("Search animals")).toBeInTheDocument();
   });
@@ -260,7 +270,7 @@ describe("DashboardPage", () => {
     });
   });
 
-  it("charts the visible matches when a rescue profile is selected", async () => {
+  it("charts the profile's full candidate pool when a rescue profile is selected", async () => {
     const user = userEvent.setup();
     mockSearchAnimals.mockResolvedValue(pageOf([animal()]));
     mockSearchRescueMatches.mockResolvedValue({
@@ -274,27 +284,27 @@ describe("DashboardPage", () => {
           sex_score: 20,
           availability_score: 10,
         },
-        {
-          animal: animal({ id: 2, animal_id: "A000002", name: "Rex" }),
-          score: 90,
-          breed_score: 50,
-          age_score: 20,
-          sex_score: 20,
-          availability_score: 0,
-        },
       ],
-      total: 2,
+      total: 5589,
       page: 1,
       page_size: 10,
     });
     render(<DashboardPage />);
     await screen.findByText("Bella");
 
-    await user.selectOptions(screen.getByLabelText("Rescue profile:"), "1");
+    mockGetBreedSummary.mockResolvedValue({
+      items: [{ breed: "Labrador Retriever Mix", count: 608 }],
+      other_count: 4981,
+      total_animals: 5589,
+    });
+    await selectOption(user, /Rescue profile/, "Water Rescue");
 
     expect(await screen.findByText("Breed distribution")).toBeInTheDocument();
-    expect(screen.getByText("2 · 100%")).toBeInTheDocument();
-    expect(mockGetBreedSummary).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText("608 · 11%")).toBeInTheDocument();
+    expect(mockGetBreedSummary).toHaveBeenLastCalledWith("user-token", {
+      animalType: "Dog",
+      limit: 5,
+    });
   });
 
   it("maps the visible animals and selects one on row click", async () => {
@@ -312,7 +322,10 @@ describe("DashboardPage", () => {
     await user.click(screen.getByText("Max"));
 
     expect(screen.getByTestId("animal-map")).toHaveAttribute("data-selected", "2");
-    expect(screen.getByText("Max").closest("tr")).toHaveClass("selected-row");
+    expect(screen.getByText("Max").closest('[role="row"]')).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 
   it("shows an error when matches fail to load", async () => {
@@ -322,7 +335,7 @@ describe("DashboardPage", () => {
     render(<DashboardPage />);
     await screen.findByText("Bella");
 
-    await user.selectOptions(screen.getByLabelText("Rescue profile:"), "1");
+    await selectOption(user, /Rescue profile/, "Water Rescue");
 
     expect(await screen.findByText("Rescue profile not found")).toBeInTheDocument();
   });

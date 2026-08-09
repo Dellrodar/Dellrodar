@@ -1,5 +1,18 @@
-import { Link, useNavigate } from "react-router-dom";
+import AppBar from "@mui/material/AppBar";
+import Avatar from "@mui/material/Avatar";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import Toolbar from "@mui/material/Toolbar";
+import Typography from "@mui/material/Typography";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import logo from "../assets/grazioso-logo.png";
 import { useAuth } from "../auth/AuthContext";
+
+const navButtonSx = {
+  color: "text.primary",
+  "&.active": { color: "primary.main" },
+};
 
 export const NavBar = () => {
   const { user, logout } = useAuth();
@@ -11,28 +24,56 @@ export const NavBar = () => {
   };
 
   return (
-    <nav className="navbar">
-      <div className="navbar-brand">Grazioso Salvare</div>
-      <div className="navbar-links">
-        {user && (
+    <AppBar
+      position="static"
+      color="transparent"
+      elevation={0}
+      sx={{ borderBottom: 1, borderColor: "divider" }}
+    >
+      <Toolbar sx={{ gap: 1.5 }}>
+        <Box
+          component={Link}
+          to={user ? "/dashboard" : "/login"}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            mr: "auto",
+            textDecoration: "none",
+            color: "inherit",
+          }}
+        >
+          <Avatar src={logo} alt="" sx={{ width: 36, height: 36, bgcolor: "#ffffff" }} />
+          <Typography variant="h6" component="span" sx={{ fontWeight: 600 }}>
+            Grazioso Salvare
+          </Typography>
+        </Box>
+        {user ? (
           <>
-            <Link to="/dashboard">Dashboard</Link>
-            {user.role === "admin" && <Link to="/admin">Admin Panel</Link>}
-            <span className="navbar-user">
-              {user.email} ({user.role})
-            </span>
-            <button type="button" onClick={handleLogout}>
+            <Button component={NavLink} to="/dashboard" sx={navButtonSx}>
+              Dashboard
+            </Button>
+            {user.role === "admin" && (
+              <Button component={NavLink} to="/admin" sx={navButtonSx}>
+                Admin Panel
+              </Button>
+            )}
+            <Chip label={`${user.email} (${user.role})`} variant="outlined" size="small" />
+            <Button variant="outlined" onClick={handleLogout}>
               Log out
-            </button>
+            </Button>
           </>
-        )}
-        {!user && (
+        ) : (
           <>
-            <Link to="/login">Log in</Link>
-            <Link to="/signup">Sign up</Link>
+            <Button component={NavLink} to="/login" sx={navButtonSx}>
+              Log in
+            </Button>
+            <Button component={Link} to="/signup" variant="contained" disableElevation>
+              Sign up
+            </Button>
           </>
         )}
-      </div>
-    </nav>
+      </Toolbar>
+    </AppBar>
   );
 };

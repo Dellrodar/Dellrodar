@@ -1,4 +1,23 @@
+import Search from "@mui/icons-material/Search";
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import type { ChipProps } from "@mui/material/Chip";
+import Chip from "@mui/material/Chip";
+import FormControl from "@mui/material/FormControl";
+import InputAdornment from "@mui/material/InputAdornment";
+import InputLabel from "@mui/material/InputLabel";
+import LinearProgress from "@mui/material/LinearProgress";
+import MenuItem from "@mui/material/MenuItem";
+import Paper from "@mui/material/Paper";
+import Select from "@mui/material/Select";
+import TextField from "@mui/material/TextField";
+import Tooltip from "@mui/material/Tooltip";
+import Typography from "@mui/material/Typography";
+import type { GridColDef, GridRowSelectionModel } from "@mui/x-data-grid";
+import { DataGrid } from "@mui/x-data-grid";
 import { type FormEvent, useEffect, useState } from "react";
+import type { Animal } from "../api/animals";
 import { type AnimalPage, type BreedSummary, getBreedSummary, searchAnimals } from "../api/animals";
 import { ApiError } from "../api/client";
 import {
@@ -10,28 +29,111 @@ import {
 import { useAuth } from "../auth/AuthContext";
 import { AnimalMap } from "../components/AnimalMap";
 import { BreedChart, type BreedSlice } from "../components/BreedChart";
+import { usePageTitle } from "../hooks/usePageTitle";
 
-const PAGE_SIZE = 10;
 const ANIMAL_TYPES = ["Dog", "Cat", "Bird", "Livestock", "Other"];
 const TOP_BREEDS = 5;
+const PAGE_SIZE_OPTIONS = [10, 25, 50];
+
+const OUTCOME_COLORS: Record<string, ChipProps["color"]> = {
+  Adoption: "success",
+  "Return to Owner": "primary",
+  Transfer: "info",
+  Euthanasia: "error",
+  Died: "error",
+};
+
+interface MatchRow extends Animal {
+  rank: number;
+  score: number;
+  breed_score: number;
+  age_score: number;
+  sex_score: number;
+  availability_score: number;
+}
+
+const outcomeCell = (value: string | null) =>
+  value ? (
+    <Chip
+      size="small"
+      variant="outlined"
+      color={OUTCOME_COLORS[value] ?? "default"}
+      label={value}
+    />
+  ) : (
+    "—"
+  );
+
+const animalFieldColumns: GridColDef[] = [
+  { field: "animal_id", headerName: "Animal ID", width: 110, sortable: false },
+  {
+    field: "name",
+    headerName: "Name",
+    flex: 1,
+    minWidth: 110,
+    sortable: false,
+    renderCell: (params) => params.value ?? "—",
+  },
+  { field: "animal_type", headerName: "Type", width: 90, sortable: false },
+  { field: "breed", headerName: "Breed", flex: 2, minWidth: 200, sortable: false },
+  {
+    field: "sex_upon_outcome",
+    headerName: "Sex",
+    width: 130,
+    sortable: false,
+    renderCell: (params) => params.value ?? "—",
+  },
+  {
+    field: "age_upon_outcome_in_weeks",
+    headerName: "Age (weeks)",
+    width: 110,
+    sortable: false,
+    renderCell: (params) => (params.value != null ? Math.round(params.value as number) : "—"),
+  },
+  {
+    field: "outcome_type",
+    headerName: "Outcome",
+    width: 150,
+    sortable: false,
+    renderCell: (params) => outcomeCell(params.value as string | null),
+  },
+];
+
+const animalColumns: GridColDef[] = animalFieldColumns.filter((c) => c.field !== "animal_type");
+
+const matchColumns: GridColDef[] = [
+  { field: "rank", headerName: "Rank", width: 70, sortable: false },
+  {
+    field: "score",
+    headerName: "Score",
+    width: 180,
+    sortable: false,
+    renderCell: (params) => {
+      const row = params.row as MatchRow;
+      return (
+        <Tooltip
+          title={`Breed ${row.breed_score} · Age ${row.age_score} · Sex ${row.sex_score} · Availability ${row.availability_score}`}
+        >
+          <Box
+            sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%", height: "100%" }}
+          >
+            <LinearProgress
+              variant="determinate"
+              value={Math.max(0, Math.min(100, row.score))}
+              sx={{ flexGrow: 1, height: 6, borderRadius: 3 }}
+            />
+            <Typography variant="body2">{row.score}</Typography>
+          </Box>
+        </Tooltip>
+      );
+    },
+  },
+  ...animalColumns,
+];
 
 const breedSlicesFromSummary = (summary: BreedSummary): BreedSlice[] => {
   const slices = summary.items.map((item) => ({ label: item.breed, count: item.count }));
   if (summary.other_count > 0) slices.push({ label: "Other", count: summary.other_count });
-  return slices;
-};
-
-const breedSlicesFromMatches = (matchPage: RescueMatchPage): BreedSlice[] => {
-  const counts = new Map<string, number>();
-  for (const match of matchPage.items) {
-    counts.set(match.animal.breed, (counts.get(match.animal.breed) ?? 0) + 1);
-  }
-  const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  const slices = sorted
-    .slice(0, TOP_BREEDS)
-    .map(([label, count]): BreedSlice => ({ label, count }));
-  const other = sorted.slice(TOP_BREEDS).reduce((sum, [, count]) => sum + count, 0);
-  if (other > 0) slices.push({ label: "Other", count: other });
   return slices;
 };
 
@@ -46,12 +148,14 @@ const formatCriteria = (profile: RescueProfile): string => {
 };
 
 export const DashboardPage = () => {
+  usePageTitle("Dashboard");
   const { user, token } = useAuth();
 
   const [queryInput, setQueryInput] = useState("");
   const [typeInput, setTypeInput] = useState("");
   const [search, setSearch] = useState({ q: "", animalType: "" });
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[0]);
 
   const [profiles, setProfiles] = useState<RescueProfile[]>([]);
   const [profileId, setProfileId] = useState<number | null>(null);
@@ -79,7 +183,7 @@ export const DashboardPage = () => {
       q: search.q || undefined,
       animalType: search.animalType || undefined,
       page,
-      pageSize: PAGE_SIZE,
+      pageSize,
     })
       .then((data) => {
         setResults(data);
@@ -87,34 +191,42 @@ export const DashboardPage = () => {
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Unable to load animals"))
       .finally(() => setIsLoading(false));
-  }, [token, search, page, profileId]);
+  }, [token, search, page, pageSize, profileId]);
 
-  // The chart covers the whole filtered set, so it refetches on new searches
-  // but not on page turns.
+  // The chart covers the whole filtered set — or, in match mode, the profile's
+  // full candidate pool (every animal of its type) — so it refetches on new
+  // searches and profile changes but not on page turns.
   useEffect(() => {
-    if (!token || profileId !== null) return;
+    if (!token) return;
 
-    getBreedSummary(token, {
-      q: search.q || undefined,
-      animalType: search.animalType || undefined,
-      limit: TOP_BREEDS,
-    })
+    const profile = profileId === null ? null : profiles.find((p) => p.id === profileId);
+    if (profileId !== null && !profile) return;
+
+    const params = profile
+      ? { animalType: profile.animal_type, limit: TOP_BREEDS }
+      : {
+          q: search.q || undefined,
+          animalType: search.animalType || undefined,
+          limit: TOP_BREEDS,
+        };
+
+    getBreedSummary(token, params)
       .then(setBreedSummary)
       .catch(() => setBreedSummary(null));
-  }, [token, search, profileId]);
+  }, [token, search, profileId, profiles]);
 
   useEffect(() => {
     if (!token || profileId === null) return;
 
     setIsLoading(true);
-    searchRescueMatches(token, profileId, { page, pageSize: PAGE_SIZE })
+    searchRescueMatches(token, profileId, { page, pageSize })
       .then((data) => {
         setMatches(data);
         setError(null);
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : "Unable to load matches"))
       .finally(() => setIsLoading(false));
-  }, [token, profileId, page]);
+  }, [token, profileId, page, pageSize]);
 
   const handleSearch = (event: FormEvent) => {
     event.preventDefault();
@@ -130,176 +242,166 @@ export const DashboardPage = () => {
     setProfileId(value ? Number(value) : null);
   };
 
-  const handlePageChange = (delta: number) => {
-    setSelectedAnimalId(null);
-    setPage((p) => p + delta);
+  const selectionModel: GridRowSelectionModel = {
+    type: "include",
+    ids: selectedAnimalId != null ? new Set([selectedAnimalId]) : new Set(),
   };
 
-  const activePage = profileId === null ? results : matches;
-  const totalPages = activePage
-    ? Math.max(1, Math.ceil(activePage.total / activePage.page_size))
-    : 1;
+  const handleSelectionChange = (model: GridRowSelectionModel) => {
+    const [first] = model.ids;
+    setSelectedAnimalId(model.type === "include" && typeof first === "number" ? first : null);
+  };
+
+  const matchRows: MatchRow[] = matches
+    ? matches.items.map((match, index) => ({
+        ...match.animal,
+        rank: (matches.page - 1) * matches.page_size + index + 1,
+        score: match.score,
+        breed_score: match.breed_score,
+        age_score: match.age_score,
+        sex_score: match.sex_score,
+        availability_score: match.availability_score,
+      }))
+    : [];
+
   const selectedProfile = matches?.profile ?? profiles.find((p) => p.id === profileId) ?? null;
 
+  const sharedGridProps = {
+    paginationMode: "server" as const,
+    pageSizeOptions: PAGE_SIZE_OPTIONS,
+    paginationModel: { page: page - 1, pageSize },
+    loading: isLoading,
+    disableColumnMenu: true,
+    disableVirtualization: true,
+    rowSelectionModel: selectionModel,
+    onRowSelectionModelChange: handleSelectionChange,
+    onPaginationModelChange: (model: { page: number; pageSize: number }) => {
+      setSelectedAnimalId(null);
+      setPage(model.page + 1);
+      setPageSize(model.pageSize);
+    },
+    slotProps: {
+      loadingOverlay: {
+        variant: "linear-progress" as const,
+        noRowsVariant: "skeleton" as const,
+      },
+    },
+  };
+
   return (
-    <div className="page">
-      <h1>Dashboard</h1>
-      <p>
+    <Box>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Dashboard
+      </Typography>
+      <Typography color="text.secondary">
         Welcome, {user?.email}. You are signed in as {user?.role}.
-      </p>
+      </Typography>
 
-      <div className="search-bar">
-        <label htmlFor="rescue-profile">Rescue profile:</label>
-        <select
-          id="rescue-profile"
-          value={profileId ?? ""}
-          onChange={(e) => handleProfileChange(e.target.value)}
-        >
-          <option value="">All animals</option>
-          {profiles.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {profileId === null && (
-        <form onSubmit={handleSearch} className="search-bar">
-          <input
-            type="text"
-            placeholder="Search by name, breed, or animal ID"
-            aria-label="Search animals"
-            value={queryInput}
-            onChange={(e) => setQueryInput(e.target.value)}
-          />
-          <select
-            aria-label="Animal type"
-            value={typeInput}
-            onChange={(e) => setTypeInput(e.target.value)}
+      <Paper
+        variant="outlined"
+        sx={{ p: 2, mt: 3, display: "flex", flexWrap: "wrap", gap: 2, alignItems: "center" }}
+      >
+        <FormControl size="small" sx={{ minWidth: 200 }}>
+          <InputLabel id="rescue-profile-label">Rescue profile</InputLabel>
+          <Select
+            labelId="rescue-profile-label"
+            label="Rescue profile"
+            value={profileId === null ? "" : String(profileId)}
+            onChange={(e) => handleProfileChange(e.target.value)}
           >
-            <option value="">All types</option>
-            {ANIMAL_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
+            <MenuItem value="">All animals</MenuItem>
+            {profiles.map((p) => (
+              <MenuItem key={p.id} value={String(p.id)}>
+                {p.name}
+              </MenuItem>
             ))}
-          </select>
-          <button type="submit">Search</button>
-        </form>
-      )}
+          </Select>
+        </FormControl>
+
+        {profileId === null && (
+          <Box
+            component="form"
+            onSubmit={handleSearch}
+            sx={{ display: "flex", flexWrap: "wrap", gap: 2, flexGrow: 1 }}
+          >
+            <TextField
+              size="small"
+              placeholder="Search by name, breed, or animal ID"
+              value={queryInput}
+              onChange={(e) => setQueryInput(e.target.value)}
+              sx={{ flexGrow: 1, minWidth: 220 }}
+              slotProps={{
+                htmlInput: { "aria-label": "Search animals" },
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search fontSize="small" />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel id="animal-type-label">Animal type</InputLabel>
+              <Select
+                labelId="animal-type-label"
+                label="Animal type"
+                value={typeInput}
+                onChange={(e) => setTypeInput(e.target.value)}
+              >
+                <MenuItem value="">All types</MenuItem>
+                {ANIMAL_TYPES.map((t) => (
+                  <MenuItem key={t} value={t}>
+                    {t}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Button type="submit" variant="contained" disableElevation>
+              Search
+            </Button>
+          </Box>
+        )}
+      </Paper>
 
       {profileId !== null && selectedProfile && (
-        <p className="notice">
+        <Alert severity="info" sx={{ mt: 2 }}>
           Ranking {selectedProfile.animal_type.toLowerCase()}s for{" "}
           <strong>{selectedProfile.name}</strong>: {formatCriteria(selectedProfile)}
-        </p>
+        </Alert>
       )}
 
-      {error && <p className="form-error">{error}</p>}
-      {isLoading && <p>Loading animals...</p>}
-
-      {!isLoading && profileId === null && results && (
-        <>
-          <table>
-            <thead>
-              <tr>
-                <th>Animal ID</th>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Breed</th>
-                <th>Sex</th>
-                <th>Age (weeks)</th>
-                <th>Outcome</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.items.map((animal) => (
-                <tr
-                  key={animal.id}
-                  className={animal.id === selectedAnimalId ? "selected-row" : undefined}
-                  onClick={() => setSelectedAnimalId(animal.id)}
-                >
-                  <td>{animal.animal_id}</td>
-                  <td>{animal.name ?? "—"}</td>
-                  <td>{animal.animal_type}</td>
-                  <td>{animal.breed}</td>
-                  <td>{animal.sex_upon_outcome ?? "—"}</td>
-                  <td>
-                    {animal.age_upon_outcome_in_weeks != null
-                      ? Math.round(animal.age_upon_outcome_in_weeks)
-                      : "—"}
-                  </td>
-                  <td>{animal.outcome_type ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {results.items.length === 0 && <p>No animals match your search.</p>}
-        </>
+      {error && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {error}
+        </Alert>
       )}
 
-      {!isLoading && profileId !== null && matches && (
-        <>
-          <table>
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Score</th>
-                <th>Animal ID</th>
-                <th>Name</th>
-                <th>Breed</th>
-                <th>Sex</th>
-                <th>Age (weeks)</th>
-                <th>Outcome</th>
-              </tr>
-            </thead>
-            <tbody>
-              {matches.items.map((match, index) => (
-                <tr
-                  key={match.animal.id}
-                  className={match.animal.id === selectedAnimalId ? "selected-row" : undefined}
-                  onClick={() => setSelectedAnimalId(match.animal.id)}
-                >
-                  <td>{(matches.page - 1) * matches.page_size + index + 1}</td>
-                  <td
-                    title={`Breed ${match.breed_score} · Age ${match.age_score} · Sex ${match.sex_score} · Availability ${match.availability_score}`}
-                  >
-                    {match.score}
-                  </td>
-                  <td>{match.animal.animal_id}</td>
-                  <td>{match.animal.name ?? "—"}</td>
-                  <td>{match.animal.breed}</td>
-                  <td>{match.animal.sex_upon_outcome ?? "—"}</td>
-                  <td>
-                    {match.animal.age_upon_outcome_in_weeks != null
-                      ? Math.round(match.animal.age_upon_outcome_in_weeks)
-                      : "—"}
-                  </td>
-                  <td>{match.animal.outcome_type ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {matches.items.length === 0 && <p>No candidates found for this profile.</p>}
-        </>
+      {profileId === null && (
+        <Box sx={{ height: 560, mt: 2 }}>
+          <DataGrid
+            {...sharedGridProps}
+            rows={results?.items ?? []}
+            columns={animalFieldColumns}
+            rowCount={results?.total ?? 0}
+            localeText={{ noRowsLabel: "No animals match your search." }}
+          />
+        </Box>
       )}
 
-      {!isLoading && activePage && (
-        <div className="pagination">
-          <button type="button" disabled={page <= 1} onClick={() => handlePageChange(-1)}>
-            Previous
-          </button>
-          <span>
-            Page {activePage.page} of {totalPages} ({activePage.total} animals)
-          </span>
-          <button type="button" disabled={page >= totalPages} onClick={() => handlePageChange(1)}>
-            Next
-          </button>
-        </div>
+      {profileId !== null && (
+        <Box sx={{ height: 560, mt: 2 }}>
+          <DataGrid
+            {...sharedGridProps}
+            rows={matchRows}
+            columns={matchColumns}
+            rowCount={matches?.total ?? 0}
+            localeText={{ noRowsLabel: "No candidates found for this profile." }}
+          />
+        </Box>
       )}
 
-      {!isLoading && profileId === null && results && breedSummary && (
+      {profileId === null && results && breedSummary && (
         <div className="dashboard-visuals">
           <BreedChart
             slices={breedSlicesFromSummary(breedSummary)}
@@ -309,11 +411,11 @@ export const DashboardPage = () => {
         </div>
       )}
 
-      {!isLoading && profileId !== null && matches && matches.items.length > 0 && (
+      {profileId !== null && matches && matches.items.length > 0 && breedSummary && (
         <div className="dashboard-visuals">
           <BreedChart
-            slices={breedSlicesFromMatches(matches)}
-            totalAnimals={matches.items.length}
+            slices={breedSlicesFromSummary(breedSummary)}
+            totalAnimals={breedSummary.total_animals}
           />
           <AnimalMap
             animals={matches.items.map((match) => match.animal)}
@@ -321,6 +423,6 @@ export const DashboardPage = () => {
           />
         </div>
       )}
-    </div>
+    </Box>
   );
 };

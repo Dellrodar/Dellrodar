@@ -1,7 +1,24 @@
+import Card from "@mui/material/Card";
+import Typography from "@mui/material/Typography";
+
 export interface BreedSlice {
   label: string;
   count: number;
 }
+
+const ChartCard = ({ children }: { children: React.ReactNode }) => (
+  <Card
+    variant="outlined"
+    component="figure"
+    className="breed-chart"
+    sx={{ m: 0, p: 2, height: "100%", display: "flex", flexDirection: "column", gap: 1 }}
+  >
+    <Typography component="figcaption" sx={{ fontWeight: 600 }}>
+      Breed distribution
+    </Typography>
+    {children}
+  </Card>
+);
 
 interface BreedChartProps {
   slices: BreedSlice[];
@@ -38,10 +55,9 @@ export const BreedChart = ({ slices, totalAnimals }: BreedChartProps) => {
 
   if (total === 0) {
     return (
-      <figure className="breed-chart">
-        <figcaption>Breed distribution</figcaption>
-        <p>No breed data to chart.</p>
-      </figure>
+      <ChartCard>
+        <Typography color="text.secondary">No breed data to chart.</Typography>
+      </ChartCard>
     );
   }
 
@@ -56,8 +72,7 @@ export const BreedChart = ({ slices, totalAnimals }: BreedChartProps) => {
   });
 
   return (
-    <figure className="breed-chart">
-      <figcaption>Breed distribution</figcaption>
+    <ChartCard>
       <svg
         viewBox="0 0 200 200"
         role="img"
@@ -106,6 +121,6 @@ export const BreedChart = ({ slices, totalAnimals }: BreedChartProps) => {
           </li>
         ))}
       </ul>
-    </figure>
+    </ChartCard>
   );
 };

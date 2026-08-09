@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { fetchCurrentUser, login as loginRequest, type User } from "../api/auth";
+import { setUnauthorizedHandler } from "../api/client";
 
 const TOKEN_STORAGE_KEY = "grazioso.token";
 
@@ -63,6 +64,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setToken(null);
     setUser(null);
   }, []);
+
+  // Any authenticated request rejected with 401 means the token expired or was
+  // revoked. Dropping the session here makes the route guards redirect to the
+  // login page, preserving the location the user came from.
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      console.warn("Session is no longer valid; signing out.");
+      logout();
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [logout]);
 
   const value = useMemo(
     () => ({ user, token, isLoading, login, logout }),

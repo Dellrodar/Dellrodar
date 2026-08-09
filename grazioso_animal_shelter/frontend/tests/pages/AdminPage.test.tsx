@@ -7,9 +7,10 @@ import { AdminPage } from "../../src/pages/AdminPage";
 const mockListUsers = vi.fn();
 const mockUpdateUserRole = vi.fn();
 const mockUpdateUserStatus = vi.fn();
+const mockUseAuth = vi.fn();
 
 vi.mock("../../src/auth/AuthContext", () => ({
-  useAuth: () => ({ token: "admin-token" }),
+  useAuth: () => mockUseAuth(),
 }));
 
 vi.mock("../../src/api/admin", () => ({
@@ -28,13 +29,17 @@ describe("AdminPage", () => {
     mockListUsers.mockReset();
     mockUpdateUserRole.mockReset();
     mockUpdateUserStatus.mockReset();
+    mockUseAuth.mockReturnValue({
+      token: "admin-token",
+      user: { id: 99, email: "admin@example.com", is_active: true, role: "admin" },
+    });
   });
 
   it("shows a loading state and then the fetched users", async () => {
     mockListUsers.mockResolvedValue(users);
     render(<AdminPage />);
 
-    expect(screen.getByText("Loading users...")).toBeInTheDocument();
+    expect(screen.getByRole("table")).toHaveAttribute("aria-busy", "true");
 
     expect(await screen.findByText("viewer@example.com")).toBeInTheDocument();
     expect(screen.getByText("staff@example.com")).toBeInTheDocument();
@@ -64,12 +69,12 @@ describe("AdminPage", () => {
     const row = (await screen.findByText("viewer@example.com")).closest("tr");
     if (!row) throw new Error("row not found");
 
-    await user.selectOptions(within(row).getByRole("combobox"), "staff");
+    await user.click(within(row).getByRole("combobox"));
+    await user.click(await screen.findByRole("option", { name: "staff" }));
 
     expect(mockUpdateUserRole).toHaveBeenCalledWith("admin-token", 1, "staff");
-    expect(
-      await within(row).findByRole("option", { name: "staff", selected: true }),
-    ).toBeInTheDocument();
+    expect(within(row).getByRole("combobox")).toHaveTextContent("staff");
+    expect(await screen.findByText("Role updated")).toBeInTheDocument();
   });
 
   it("toggles a user's active status", async () => {
@@ -81,12 +86,29 @@ describe("AdminPage", () => {
     const row = (await screen.findByText("staff@example.com")).closest("tr");
     if (!row) throw new Error("row not found");
 
-    const checkbox = within(row).getByRole("checkbox");
-    expect(checkbox).not.toBeChecked();
+    const statusSwitch = within(row).getByRole("switch");
+    expect(statusSwitch).not.toBeChecked();
 
-    await user.click(checkbox);
+    await user.click(statusSwitch);
 
     expect(mockUpdateUserStatus).toHaveBeenCalledWith("admin-token", 2, true);
+    expect(await screen.findByText("Status updated")).toBeInTheDocument();
+  });
+
+  it("disables editing your own account", async () => {
+    mockUseAuth.mockReturnValue({
+      token: "admin-token",
+      user: { id: 1, email: "viewer@example.com", is_active: true, role: "viewer" },
+    });
+    mockListUsers.mockResolvedValue(users);
+    render(<AdminPage />);
+
+    const row = (await screen.findByText("viewer@example.com")).closest("tr");
+    if (!row) throw new Error("row not found");
+
+    expect(within(row).getByText("You")).toBeInTheDocument();
+    expect(within(row).getByRole("combobox")).toHaveAttribute("aria-disabled", "true");
+    expect(within(row).getByRole("switch")).toBeDisabled();
   });
 
   it("shows an error message when updating status fails", async () => {
@@ -98,7 +120,7 @@ describe("AdminPage", () => {
     const row = (await screen.findByText("staff@example.com")).closest("tr");
     if (!row) throw new Error("row not found");
 
-    await user.click(within(row).getByRole("checkbox"));
+    await user.click(within(row).getByRole("switch"));
 
     expect(await screen.findByText("Unable to update status")).toBeInTheDocument();
   });
@@ -112,7 +134,8 @@ describe("AdminPage", () => {
     const row = (await screen.findByText("viewer@example.com")).closest("tr");
     if (!row) throw new Error("row not found");
 
-    await user.selectOptions(within(row).getByRole("combobox"), "admin");
+    await user.click(within(row).getByRole("combobox"));
+    await user.click(await screen.findByRole("option", { name: "admin" }));
 
     expect(await screen.findByText("Unknown role")).toBeInTheDocument();
   });
