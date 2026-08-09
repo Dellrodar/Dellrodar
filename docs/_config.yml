@@ -29,7 +29,7 @@ about_content: |
   a legacy dashboard into a full-stack application with FastAPI, React, and PostgreSQL.
 
 content:
-  - title: CS 499 ePortfolio
+  - title: My Portfolio
     layout: list
     content:
       - layout: left
