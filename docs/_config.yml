@@ -19,13 +19,14 @@ github_username: Dellrodar
 darkmode: false
 
 # About Section
-# about_profile_image: images/profile.jpg # TODO optional, add an image under docs/images/
+about_profile_image: images/profile.jpg
 about_content: |
-  Hi, I'm a software engineering student completing my B.S. in Computer Science at
-  Southern New Hampshire University. This portfolio presents my CS 499 capstone work,
-  where I took a Flask-based animal shelter dashboard from CS 340 and modernized it into
-  a full-stack application with a FastAPI backend, a React frontend, and a PostgreSQL
-  database, enhanced across software design, algorithms, and databases.
+  Hi, I'm Emilio Crocco, a full-stack software engineer completing my B.S. in Computer
+  Science at Southern New Hampshire University. I build web applications end to end,
+  from React frontends through API design to relational data modeling, with a focus on
+  security, maintainability, and clear documentation. This portfolio showcases work
+  completed during the course of my degree program, including a capstone that modernized
+  a legacy dashboard into a full-stack application with FastAPI, React, and PostgreSQL.
 
 content:
   - title: CS 499 ePortfolio

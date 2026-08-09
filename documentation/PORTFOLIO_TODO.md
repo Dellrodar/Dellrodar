@@ -18,7 +18,7 @@ This file sits at the repo root, outside `docs/`, so Jekyll will not publish it.
 - [x] Enhancement One reflection (done, sourced from journals)
 - [x] Enhancement Two reflection (done, sourced from journals)
 - [x] Enhancement Three reflection (done, sourced from journals)
-- [ ] Profile photo (optional)
+- [x] Profile photo (done, GitHub avatar saved as docs/images/profile.jpg)
 
 ---
 
