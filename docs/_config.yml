@@ -35,7 +35,7 @@ content:
       - layout: left
         border: weak
         title: Professional Self-Assessment
-        link: https://github.com/Dellrodar/Dellrodar/blob/main/docs/self-assessment.md
+        link: https://dellrodar.github.io/Dellrodar/self-assessment/
         link_text: Read the self-assessment
         description: |
           A reflection on my growth through the Computer Science program and how the
@@ -44,7 +44,7 @@ content:
       - layout: left
         border: weak
         title: Code Review
-        link: https://github.com/Dellrodar/Dellrodar/blob/main/docs/code-review.md
+        link: https://dellrodar.github.io/Dellrodar/code-review/
         link_text: Watch the code review
         description: |
           A walkthrough of the original CS 340 artifact covering existing functionality,
@@ -52,7 +52,7 @@ content:
       - layout: left
         border: weak
         title: "Enhancement One: Software Design and Engineering"
-        link: https://github.com/Dellrodar/Dellrodar/blob/main/docs/enhancement-one.md
+        link: https://dellrodar.github.io/Dellrodar/enhancement-one/
         link_text: Read the narrative
         description: |
           Restructured the original Flask dashboard into a full-stack monorepo with a
@@ -61,7 +61,7 @@ content:
       - layout: left
         border: weak
         title: "Enhancement Two: Algorithms and Data Structures"
-        link: https://github.com/Dellrodar/Dellrodar/blob/main/docs/enhancement-two.md
+        link: https://dellrodar.github.io/Dellrodar/enhancement-two/
         link_text: Read the narrative
         description: |
           Replaced hard-coded rescue filtering with database-driven rescue profiles and a
@@ -70,7 +70,7 @@ content:
       - layout: left
         border: weak
         title: "Enhancement Three: Databases"
-        link: https://github.com/Dellrodar/Dellrodar/blob/main/docs/enhancement-three.md
+        link: https://dellrodar.github.io/Dellrodar/enhancement-three/
         link_text: Read the narrative
         description: |
           Migrated the data layer to a normalized PostgreSQL schema with lookup tables,
