@@ -32,15 +32,15 @@ content:
   - title: My Portfolio
     layout: list
     content:
-      - layout: left
-        border: weak
-        title: Professional Self-Assessment
-        link: https://dellrodar.github.io/Dellrodar/self-assessment/
-        link_text: Read the self-assessment
-        description: |
-          A reflection on my growth through the Computer Science program and how the
-          capstone artifacts demonstrate my strengths across collaboration, communication,
-          algorithms, software engineering, and security.
+      # - layout: left
+      #   border: weak
+      #   title: Professional Self-Assessment
+      #   link: https://dellrodar.github.io/Dellrodar/self-assessment/
+      #   link_text: Read the self-assessment
+      #   description: |
+      #     A reflection on my growth through the Computer Science program and how the
+      #     capstone artifacts demonstrate my strengths across collaboration, communication,
+      #     algorithms, software engineering, and security.
       - layout: left
         border: weak
         title: Code Review
