@@ -47,9 +47,9 @@ handling, account status checks, and archive-instead-of-delete behavior.]
 
 The three enhancements in this portfolio all build on a single artifact — the CS 340
 animal shelter dashboard — taken from a tightly coupled Flask application to a scoped
-full-stack system. The [software design enhancement](/Dellrodar/enhancement-one/)
-restructured the application, the [algorithms enhancement](/Dellrodar/enhancement-two/)
+full-stack system. The [software design enhancement](https://github.com/Dellrodar/Dellrodar/blob/main/docs/enhancement-one.md)
+restructured the application, the [algorithms enhancement](https://github.com/Dellrodar/Dellrodar/blob/main/docs/enhancement-two.md)
 made rescue-profile matching flexible and data-driven, and the
-[database enhancement](/Dellrodar/enhancement-three/) gave the system a normalized,
+[database enhancement](https://github.com/Dellrodar/Dellrodar/blob/main/docs/enhancement-three.md) gave the system a normalized,
 reliable data model. Together they demonstrate the five course outcomes across one
 coherent, working application.
