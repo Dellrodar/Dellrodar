@@ -41,7 +41,7 @@ Verified implemented in the code as of commit `1232f80`:
 | Frontend plan phase 4 | Map scope in match mode | Missing, map shows current page while chart shows full pool |
 | Frontend plan phase 5 | Role/status Chip badges in admin table | Partial, only a "You" chip |
 | Frontend plan phase 6 | Explicit `aria-live` on alerts and snackbar | Missing, relies on MUI defaults |
-| Backend (found in audit) | Self-demotion guard server-side | Missing, UI disables own row but the API allows it |
+| Backend (found in audit) | Self-demotion guard server-side | Done 2026-08-11, role and status changes on the acting admin's own account return 400 |
 | Deployment plan | Vercel deploy webhook triggers Lambda migration | Open stretch |
 | Deployment plan | Terraform port of `deploy_lambda.ps1` | Open stretch |
 | Portfolio TODO | Six self-assessment prose sections | Missing, page is scaffolded with bracketed prompts |
@@ -92,10 +92,10 @@ All items completed 2026-08-10, full suite of 57 backend tests passing.
 
 ## Workstream 3: Backend hardening and audit logging
 
-- [ ] Server-side self-change guard: reject role or status changes targeting the acting admin's own account, matching what the UI already prevents
+- [x] Server-side self-change guard added 2026-08-11: role and status changes targeting the acting admin's own account return 400 via `SelfChangeError`, matching the UI and covered by tests asserting no audit row is written
 - [x] Audit logging for admin and animal mutations, done 2026-08-10 via migration 0006: `audit_log` records actor id and email snapshot, action, target, detail, and timestamp in the same transaction as each mutation, with shared actor dependencies (`CurrentUser`, `StaffUser`, `AdminUser`) in `deps.py` attributing every change
 - [x] Account removal added 2026-08-10: `DELETE /admin/users/{id}` returns 204, rejects self-deletion with 400, logs the deletion, and the actor FK sets null on delete so audit history is preserved
-- [ ] Admin UI has no delete-account action yet, the endpoint is backend-only until the admin panel adds it
+- [x] Admin UI delete-account action added 2026-08-11: Actions column with a delete button per row, disabled on the acting admin's own row, confirming through the shared `ConfirmDialog` before calling `DELETE /admin/users/{id}`
 
 ## Workstream 4: Frontend session expiry
 

@@ -1,6 +1,8 @@
+import DeleteOutlined from "@mui/icons-material/DeleteOutlined";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
+import IconButton from "@mui/material/IconButton";
 import MenuItem from "@mui/material/MenuItem";
 import Paper from "@mui/material/Paper";
 import Select from "@mui/material/Select";
@@ -16,10 +18,11 @@ import TableRow from "@mui/material/TableRow";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { useEffect, useState } from "react";
-import { listUsers, updateUserRole, updateUserStatus } from "../api/admin";
+import { deleteUser, listUsers, updateUserRole, updateUserStatus } from "../api/admin";
 import type { Role, User } from "../api/auth";
 import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { usePageTitle } from "../hooks/usePageTitle";
 
 const ROLES: Role[] = ["viewer", "staff", "admin"];
@@ -33,6 +36,8 @@ export const AdminPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<User | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -67,6 +72,22 @@ export const AdminPage = () => {
     }
   };
 
+  const handleDeleteConfirm = async () => {
+    if (!token || !pendingDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteUser(token, pendingDelete.id);
+      setUsers((current) => current.filter((u) => u.id !== pendingDelete.id));
+      setError(null);
+      setSuccess("Account deleted");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Unable to delete account");
+    } finally {
+      setIsDeleting(false);
+      setPendingDelete(null);
+    }
+  };
+
   return (
     <Box>
       <Typography variant="h4" component="h1" gutterBottom>
@@ -84,6 +105,7 @@ export const AdminPage = () => {
               <TableCell>Email</TableCell>
               <TableCell>Role</TableCell>
               <TableCell>Active</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -98,6 +120,9 @@ export const AdminPage = () => {
                   </TableCell>
                   <TableCell>
                     <Skeleton width={40} height={24} />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton width={32} height={32} variant="circular" />
                   </TableCell>
                 </TableRow>
               ))}
@@ -141,12 +166,35 @@ export const AdminPage = () => {
                         </span>
                       </Tooltip>
                     </TableCell>
+                    <TableCell>
+                      <Tooltip title={isSelf ? SELF_EDIT_HINT : ""}>
+                        <span>
+                          <IconButton
+                            color="error"
+                            disabled={isSelf}
+                            onClick={() => setPendingDelete(u)}
+                            aria-label={`Delete ${u.email}`}
+                          >
+                            <DeleteOutlined />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </TableCell>
                   </TableRow>
                 );
               })}
           </TableBody>
         </Table>
       </TableContainer>
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={`Delete ${pendingDelete?.email ?? ""}?`}
+        message="This permanently removes the account. Audit history of their changes is kept."
+        confirmLabel="Delete"
+        isConfirming={isDeleting}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setPendingDelete(null)}
+      />
       <Snackbar
         open={success !== null}
         autoHideDuration={4000}

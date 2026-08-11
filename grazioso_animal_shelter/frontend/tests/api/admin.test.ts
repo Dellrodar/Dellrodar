@@ -5,11 +5,11 @@ vi.mock("../../src/api/client", async () => {
     await vi.importActual<typeof import("../../src/api/client")>("../../src/api/client");
   return {
     ...actual,
-    apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn() },
+    apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() },
   };
 });
 
-import { listUsers, updateUserRole, updateUserStatus } from "../../src/api/admin";
+import { deleteUser, listUsers, updateUserRole, updateUserStatus } from "../../src/api/admin";
 import { apiClient } from "../../src/api/client";
 
 const sampleUser = { id: 1, email: "a@example.com", is_active: true, role: "viewer" as const };
@@ -18,6 +18,7 @@ describe("api/admin", () => {
   beforeEach(() => {
     vi.mocked(apiClient.get).mockReset();
     vi.mocked(apiClient.patch).mockReset();
+    vi.mocked(apiClient.delete).mockReset();
   });
 
   it("listUsers gets /admin/users with the bearer token", async () => {
@@ -51,5 +52,13 @@ describe("api/admin", () => {
       { is_active: false },
       "the-token",
     );
+  });
+
+  it("deleteUser deletes /admin/users/:id with the bearer token", async () => {
+    vi.mocked(apiClient.delete).mockResolvedValue(undefined);
+
+    await deleteUser("the-token", 1);
+
+    expect(apiClient.delete).toHaveBeenCalledWith("/admin/users/1", "the-token");
   });
 });

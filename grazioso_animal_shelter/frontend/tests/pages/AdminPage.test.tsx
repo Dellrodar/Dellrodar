@@ -7,6 +7,7 @@ import { AdminPage } from "../../src/pages/AdminPage";
 const mockListUsers = vi.fn();
 const mockUpdateUserRole = vi.fn();
 const mockUpdateUserStatus = vi.fn();
+const mockDeleteUser = vi.fn();
 const mockUseAuth = vi.fn();
 
 vi.mock("../../src/auth/AuthContext", () => ({
@@ -17,6 +18,7 @@ vi.mock("../../src/api/admin", () => ({
   listUsers: (...args: unknown[]) => mockListUsers(...args),
   updateUserRole: (...args: unknown[]) => mockUpdateUserRole(...args),
   updateUserStatus: (...args: unknown[]) => mockUpdateUserStatus(...args),
+  deleteUser: (...args: unknown[]) => mockDeleteUser(...args),
 }));
 
 const users = [
@@ -29,6 +31,7 @@ describe("AdminPage", () => {
     mockListUsers.mockReset();
     mockUpdateUserRole.mockReset();
     mockUpdateUserStatus.mockReset();
+    mockDeleteUser.mockReset();
     mockUseAuth.mockReturnValue({
       token: "admin-token",
       user: { id: 99, email: "admin@example.com", is_active: true, role: "admin" },
@@ -109,6 +112,77 @@ describe("AdminPage", () => {
     expect(within(row).getByText("You")).toBeInTheDocument();
     expect(within(row).getByRole("combobox")).toHaveAttribute("aria-disabled", "true");
     expect(within(row).getByRole("switch")).toBeDisabled();
+    expect(within(row).getByRole("button", { name: "Delete viewer@example.com" })).toBeDisabled();
+  });
+
+  it("deletes a user after confirmation and removes the row", async () => {
+    const user = userEvent.setup();
+    mockListUsers.mockResolvedValue(users);
+    mockDeleteUser.mockResolvedValue(undefined);
+    render(<AdminPage />);
+
+    const row = (await screen.findByText("staff@example.com")).closest("tr");
+    if (!row) throw new Error("row not found");
+
+    await user.click(within(row).getByRole("button", { name: "Delete staff@example.com" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("Delete staff@example.com?")).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+
+    expect(mockDeleteUser).toHaveBeenCalledWith("admin-token", 2);
+    expect(await screen.findByText("Account deleted")).toBeInTheDocument();
+    expect(screen.queryByText("staff@example.com")).not.toBeInTheDocument();
+  });
+
+  it("cancelling the delete dialog keeps the user", async () => {
+    const user = userEvent.setup();
+    mockListUsers.mockResolvedValue(users);
+    render(<AdminPage />);
+
+    const row = (await screen.findByText("staff@example.com")).closest("tr");
+    if (!row) throw new Error("row not found");
+
+    await user.click(within(row).getByRole("button", { name: "Delete staff@example.com" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    expect(mockDeleteUser).not.toHaveBeenCalled();
+    expect(screen.getByText("staff@example.com")).toBeInTheDocument();
+  });
+
+  it("shows an error message when deleting a user fails", async () => {
+    const user = userEvent.setup();
+    mockListUsers.mockResolvedValue(users);
+    mockDeleteUser.mockRejectedValue(new ApiError(400, "You cannot delete your own account"));
+    render(<AdminPage />);
+
+    const row = (await screen.findByText("staff@example.com")).closest("tr");
+    if (!row) throw new Error("row not found");
+
+    await user.click(within(row).getByRole("button", { name: "Delete staff@example.com" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+
+    expect(await screen.findByText("You cannot delete your own account")).toBeInTheDocument();
+    expect(screen.getByText("staff@example.com")).toBeInTheDocument();
+  });
+
+  it("shows a generic error message when deleting fails for a non-API reason", async () => {
+    const user = userEvent.setup();
+    mockListUsers.mockResolvedValue(users);
+    mockDeleteUser.mockRejectedValue(new Error("network down"));
+    render(<AdminPage />);
+
+    const row = (await screen.findByText("staff@example.com")).closest("tr");
+    if (!row) throw new Error("row not found");
+
+    await user.click(within(row).getByRole("button", { name: "Delete staff@example.com" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+
+    expect(await screen.findByText("Unable to delete account")).toBeInTheDocument();
   });
 
   it("shows an error message when updating status fails", async () => {
