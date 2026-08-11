@@ -19,8 +19,10 @@ dependencies = [
 dev = [
     "pytest",
     "pytest-asyncio",
+    "pytest-cov",
     "httpx",
     "ruff",
+    "pylint",
 ]
 
 [tool.ruff]
@@ -35,7 +37,57 @@ select = [
     "UP",  # pyupgrade
     "B",   # flake8-bugbear
     "C4",  # flake8-comprehensions
+    "ANN", # flake8-annotations: every function fully typed
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests and migrations stay readable without full annotation coverage.
+"tests/*" = ["ANN"]
+"alembic/*" = ["ANN"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
+
+[tool.pylint.main]
+py-version = "3.12"
+ignore-paths = ["alembic", "tests", ".venv"]
+
+[tool.pylint.format]
+max-line-length = 100
+
+[tool.pylint.basic]
+# Conventional SQLAlchemy factory name.
+good-names = ["AsyncSessionLocal"]
+
+[tool.pylint.design]
+# FastAPI endpoints and keyword-only service signatures routinely take more
+# than five parameters via dependency injection.
+max-args = 8
+max-positional-arguments = 8
+
+[tool.pylint."messages control"]
+# Style, import order, and docstring rules are ruff's job; pylint runs for
+# its deeper checks (unused args, api misuse, design smells).
+# not-callable is a known false positive on SQLAlchemy func.* generics.
+disable = [
+    "missing-module-docstring",
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "too-few-public-methods",
+    "wrong-import-order",
+    "line-too-long",
+    "duplicate-code",
+    "not-callable",
+]
+
+[tool.coverage.run]
+source = ["app"]
+# SQLAlchemy's asyncio bridge switches greenlets on every DB call; without
+# greenlet here, coverage loses the trace after the first await in each
+# function. thread stays listed because FastAPI runs sync dependencies in a
+# threadpool.
+concurrency = ["thread", "greenlet"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80

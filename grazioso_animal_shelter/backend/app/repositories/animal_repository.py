@@ -85,7 +85,7 @@ async def breed_summary(
     ).group_by(AnimalBreed.name)
     stmt = stmt.order_by(func.count().desc(), AnimalBreed.name)
 
-    rows = [(name, count) for name, count in (await session.execute(stmt)).all()]
+    rows = list((await session.execute(stmt)).tuples().all())
     top = rows[:limit]
     other_count = sum(count for _, count in rows[limit:])
     total_animals = sum(count for _, count in rows)
