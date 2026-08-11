@@ -42,6 +42,7 @@ const animal = (overrides: Partial<Animal> = {}): Animal => ({
   age_upon_outcome_in_weeks: null,
   location_lat: 30.5,
   location_long: -97.3,
+  archived_at: null,
   ...overrides,
 });
 

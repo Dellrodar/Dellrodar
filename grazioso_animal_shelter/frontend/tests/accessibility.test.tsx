@@ -58,6 +58,7 @@ const animal: Animal = {
   age_upon_outcome_in_weeks: 52,
   location_lat: 30.5,
   location_long: -97.3,
+  archived_at: null,
 };
 
 const expectNoViolations = async (container: Element) => {
