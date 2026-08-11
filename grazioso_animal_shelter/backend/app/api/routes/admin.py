@@ -30,6 +30,10 @@ async def update_role(
         user = await user_service.update_user_role(
             db, user_id=user_id, role_name=payload.role, actor=actor
         )
+    except user_service.SelfChangeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot change your own account"
+        ) from exc
     except user_service.UserNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found") from exc
     except user_service.RoleNotFoundError as exc:
@@ -49,6 +53,10 @@ async def update_status(
         user = await user_service.update_user_status(
             db, user_id=user_id, is_active=payload.is_active, actor=actor
         )
+    except user_service.SelfChangeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot change your own account"
+        ) from exc
     except user_service.UserNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found") from exc
 

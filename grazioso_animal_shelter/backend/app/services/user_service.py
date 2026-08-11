@@ -17,6 +17,10 @@ class SelfDeleteError(Exception):
     pass
 
 
+class SelfChangeError(Exception):
+    pass
+
+
 async def list_all_users(session: AsyncSession) -> list[User]:
     return await user_repository.list_users(session)
 
@@ -24,6 +28,9 @@ async def list_all_users(session: AsyncSession) -> list[User]:
 async def update_user_role(
     session: AsyncSession, *, user_id: int, role_name: str, actor: User
 ) -> User:
+    if user_id == actor.id:
+        raise SelfChangeError(user_id)
+
     user = await user_repository.get_user_by_id(session, user_id)
     if user is None:
         raise UserNotFoundError(user_id)
@@ -50,6 +57,9 @@ async def update_user_role(
 async def update_user_status(
     session: AsyncSession, *, user_id: int, is_active: bool, actor: User
 ) -> User:
+    if user_id == actor.id:
+        raise SelfChangeError(user_id)
+
     user = await user_repository.get_user_by_id(session, user_id)
     if user is None:
         raise UserNotFoundError(user_id)

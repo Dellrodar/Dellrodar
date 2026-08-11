@@ -120,6 +120,44 @@ async def test_admin_cannot_delete_self(client, db_session):
     assert any(u["email"] == "admin-self@example.com" for u in users.json())
 
 
+async def test_admin_cannot_change_own_role(client, db_session):
+    admin_token = await _login_with_role(client, db_session, "admin-selfrole@example.com", "admin")
+    own_id = await _user_id_by_email(client, admin_token, "admin-selfrole@example.com")
+
+    resp = await client.patch(
+        f"/api/v1/admin/users/{own_id}/role", json={"role": "viewer"}, headers=_auth(admin_token)
+    )
+    assert resp.status_code == 400
+    assert resp.json()["detail"] == "You cannot change your own account"
+
+    users = await client.get("/api/v1/admin/users", headers=_auth(admin_token))
+    unchanged = next(u for u in users.json() if u["email"] == "admin-selfrole@example.com")
+    assert unchanged["role"] == "admin"
+
+    assert await _audit_rows(db_session, "admin-selfrole@example.com") == []
+
+
+async def test_admin_cannot_change_own_status(client, db_session):
+    admin_token = await _login_with_role(
+        client, db_session, "admin-selfstatus@example.com", "admin"
+    )
+    own_id = await _user_id_by_email(client, admin_token, "admin-selfstatus@example.com")
+
+    resp = await client.patch(
+        f"/api/v1/admin/users/{own_id}/status",
+        json={"is_active": False},
+        headers=_auth(admin_token),
+    )
+    assert resp.status_code == 400
+    assert resp.json()["detail"] == "You cannot change your own account"
+
+    users = await client.get("/api/v1/admin/users", headers=_auth(admin_token))
+    unchanged = next(u for u in users.json() if u["email"] == "admin-selfstatus@example.com")
+    assert unchanged["is_active"] is True
+
+    assert await _audit_rows(db_session, "admin-selfstatus@example.com") == []
+
+
 async def test_delete_missing_user_returns_404(client, db_session):
     admin_token = await _login_with_role(client, db_session, "admin-miss@example.com", "admin")
     resp = await client.delete("/api/v1/admin/users/999999", headers=_auth(admin_token))
