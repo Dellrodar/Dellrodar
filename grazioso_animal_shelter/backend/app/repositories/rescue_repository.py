@@ -118,7 +118,12 @@ async def search_matches(
     availability_score = _availability_score()
     total_score = breed_score + age_score + sex_score + availability_score
 
-    candidate_filter = Animal.animal_type_id == profile.animal_type_id
+    # Archived animals are no longer adoptable, so they never rank as
+    # candidates.
+    candidate_filter = and_(
+        Animal.animal_type_id == profile.animal_type_id,
+        Animal.archived_at.is_(None),
+    )
 
     total = await session.scalar(select(func.count()).select_from(Animal).where(candidate_filter))
 

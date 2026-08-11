@@ -24,12 +24,12 @@ Verified implemented in the code as of commit `1232f80`:
 
 | Source plan | Item | Status |
 |---|---|---|
-| Enhancement plan | Add / update / archive animal endpoints | Missing entirely, no write routes exist |
-| Enhancement plan | Staff role gating animal management | Missing, `staff` role is seeded but guards nothing |
-| Enhancement plan | Archive instead of hard delete | Missing, no archived column in schema |
+| Enhancement plan | Add / update / archive animal endpoints | Done 2026-08-10, POST, PATCH, and archive/unarchive routes with lookup validation |
+| Enhancement plan | Staff role gating animal management | Done 2026-08-10, write routes require staff or admin via `require_role` |
+| Enhancement plan | Archive instead of hard delete | Done 2026-08-10, `archived_at` column via migration 0005, archived records excluded from search and matches but retrievable by id |
 | Enhancement plan | Audit logging of admin and animal changes | Missing, no audit table or log calls |
 | Enhancement plan | Admin can remove accounts | Partial, disable exists but no delete endpoint |
-| Enhancement plan | Staff/admin animal management UI flows | Missing, blocked on backend |
+| Enhancement plan | Staff/admin animal management UI flows | Missing, backend now in place so workstream 6 is unblocked |
 | Pseudocode flows | Animal detail view from search results | Missing, backend detail endpoint exists but no frontend view |
 | Pseudocode flows | Update path via management page with typeahead | Missing, second update path in the flows |
 | Pseudocode flows | Optional filters in match mode | Missing, matches endpoint accepts only pagination |
@@ -62,7 +62,7 @@ Checked against the CS 499 Final Project Guidelines and Rubric on 2026-08-09. Th
 | Self-assessment addresses the five required topics with examples beyond the artifacts | Gap, this is the workstream 1 prose |
 | Self-assessment summarizes how the artifacts fit together | Met, that section is already written on the page |
 | GitHub Pages organized and navigable, not raw file listings | Met, resume theme with card navigation to every component |
-| Claims in narratives match the code | Risk, enhancement one and enhancement three both claim archive behavior that does not exist in the code |
+| Claims in narratives match the code | Met as of 2026-08-10, the archive behavior claimed by enhancement one and enhancement three now exists in the code |
 
 Course outcome evidence map: outcome 3 (algorithms and trade-offs) is strongly covered by enhancement two, outcome 4 (tools and value) by enhancements one and three plus tests and deployment, outcome 5 (security) by the implemented auth/RBAC/validation, but outcomes 1 (collaboration) and 2 (communication) are claimed by no enhancement page and rest almost entirely on the code review video plus the unwritten self-assessment sections. Finishing the self-assessment is what closes outcomes 1 and 2.
 
@@ -72,7 +72,7 @@ Course outcome evidence map: outcome 3 (algorithms and trade-offs) is strongly c
 - [ ] Remove the structural-draft TODO comment at the top of that file
 - [ ] Commit the staged `docs/_config.yml` change that deep-links the Projects card to `grazioso_animal_shelter`
 - [x] Confirm `docs/_site` is gitignored so stale local builds never publish, verified 2026-08-09 via `docs/.gitignore`
-- [ ] Resolve the archive claim: either implement workstream 2 before final submission or reword the security bullets on enhancement one and enhancement three so every claim matches the code
+- [x] Resolve the archive claim: workstream 2 implemented 2026-08-10, so the security bullets on enhancement one and enhancement three now match the code
 - [ ] Add an "Original artifact" link on the enhancement pages and the homepage Projects card pointing to `grazioso_animal_shelter_dashboard` so the pre-enhancement work is one click away
 - [ ] Add when the artifact was created (course term and year) to the artifact description on each enhancement page
 - [ ] Course submission logistics outside the repo: narratives saved as Word documents, all original and enhanced code files, the self-assessment, the video, and the GitHub Pages URL submitted in Brightspace
@@ -81,12 +81,14 @@ Course outcome evidence map: outcome 3 (algorithms and trade-offs) is strongly c
 
 The largest unimplemented piece of the enhancement plan. The staff role, the add/update/archive flows, and archive-not-delete behavior all depend on it.
 
-- [ ] Migration 0005 adding an `archived_at` timestamp (null means active) to `animals`
-- [ ] `POST /animals` to create a record, validating lookup values, restricted to staff and admin via `require_role`
-- [ ] `PATCH /animals/{id}` to update a record, same restriction
-- [ ] Archive endpoint (for example `POST /animals/{id}/archive` with an unarchive counterpart), same restriction
-- [ ] Exclude archived animals from default search and match results, keep them retrievable for audit
-- [ ] Backend tests for create, update, archive, role gating, and archived-record exclusion
+All items completed 2026-08-10, full suite of 57 backend tests passing.
+
+- [x] Migration 0005 adding an `archived_at` timestamp (null means active) to `animals`, applied to the local dev database
+- [x] `POST /animals` to create a record, validating lookup values, restricted to staff and admin via `require_role`
+- [x] `PATCH /animals/{id}` to update a record, same restriction, partial updates via `exclude_unset`
+- [x] `POST /animals/{id}/archive` and `POST /animals/{id}/unarchive`, same restriction
+- [x] Archived animals excluded from default search, breed summary, and match results; detail endpoint still returns them and search accepts `include_archived=true` for audit
+- [x] Backend tests for create, update, archive, role gating, and archived-record exclusion in `tests/test_animal_management.py`, 17 cases
 
 ## Workstream 3: Backend hardening and audit logging
 
