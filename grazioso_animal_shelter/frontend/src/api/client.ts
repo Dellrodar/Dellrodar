@@ -68,4 +68,6 @@ export const apiClient = {
     request<TResponse>(path, { method: "POST", body, token }),
   patch: <TResponse>(path: string, body: unknown, token?: string | null) =>
     request<TResponse>(path, { method: "PATCH", body, token }),
+  delete: (path: string, token?: string | null) =>
+    request<void>(path, { method: "DELETE", token }),
 };

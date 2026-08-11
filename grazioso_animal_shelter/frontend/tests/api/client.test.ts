@@ -119,6 +119,20 @@ describe("apiClient", () => {
     expect(onUnauthorized).not.toHaveBeenCalled();
   });
 
+  it("sends a DELETE request without a body and resolves on 204", async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 204 }));
+
+    const result = await apiClient.delete("/admin/users/1", "the-token");
+
+    expect(result).toBeUndefined();
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
+    expect(url).toBe("http://127.0.0.1:8000/api/v1/admin/users/1");
+    expect(init?.method).toBe("DELETE");
+    expect(init?.body).toBeUndefined();
+    const headers = init?.headers as Record<string, string>;
+    expect(headers.Authorization).toBe("Bearer the-token");
+  });
+
   it("returns undefined for a 204 No Content response", async () => {
     vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 204 }));
 
