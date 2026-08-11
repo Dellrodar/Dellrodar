@@ -38,6 +38,20 @@ describe("NavBar", () => {
     expect(screen.getByRole("link", { name: "Dashboard" })).toBeInTheDocument();
     expect(screen.getByText("viewer@example.com (viewer)")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Admin Panel" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Add Animal" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Manage Animals" })).not.toBeInTheDocument();
+  });
+
+  it("shows the animal management links for staff", () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 3, email: "staff@example.com", is_active: true, role: "staff" },
+      logout: mockLogout,
+    });
+    renderNavBar();
+
+    expect(screen.getByRole("link", { name: "Add Animal" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Manage Animals" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Admin Panel" })).not.toBeInTheDocument();
   });
 
   it("shows the Admin Panel link for an admin", () => {
@@ -48,6 +62,8 @@ describe("NavBar", () => {
     renderNavBar();
 
     expect(screen.getByRole("link", { name: "Admin Panel" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Add Animal" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Manage Animals" })).toBeInTheDocument();
   });
 
   it("calls logout when the log out button is clicked", async () => {

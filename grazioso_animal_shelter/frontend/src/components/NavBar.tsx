@@ -53,6 +53,16 @@ export const NavBar = () => {
             <Button component={NavLink} to="/dashboard" sx={navButtonSx}>
               Dashboard
             </Button>
+            {(user.role === "staff" || user.role === "admin") && (
+              <>
+                <Button component={NavLink} to="/animals/new" sx={navButtonSx}>
+                  Add Animal
+                </Button>
+                <Button component={NavLink} to="/animals/manage" sx={navButtonSx}>
+                  Manage Animals
+                </Button>
+              </>
+            )}
             {user.role === "admin" && (
               <Button component={NavLink} to="/admin" sx={navButtonSx}>
                 Admin Panel

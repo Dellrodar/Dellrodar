@@ -74,6 +74,7 @@ async def setup_database():
 async def _clean_users():
     yield
     async with TestSessionLocal() as session:
+        await session.execute(text("DELETE FROM audit_log"))
         await session.execute(text("DELETE FROM users"))
         await session.commit()
 

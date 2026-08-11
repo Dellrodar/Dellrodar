@@ -10,5 +10,7 @@ bcrypt
 python-multipart
 pytest
 pytest-asyncio
+pytest-cov
 httpx
 ruff
+pylint

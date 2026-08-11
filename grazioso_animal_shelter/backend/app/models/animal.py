@@ -30,6 +30,8 @@ class Animal(Base):
     age_upon_outcome_in_weeks: Mapped[float | None] = mapped_column(Float)
     location_lat: Mapped[float | None] = mapped_column(Float)
     location_long: Mapped[float | None] = mapped_column(Float)
+    # Null means active; a timestamp records when the record was archived.
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     # Eager joins so the lookup names below never lazy-load on expired
     # instances under asyncio.

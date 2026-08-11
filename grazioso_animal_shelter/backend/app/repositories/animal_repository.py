@@ -2,7 +2,7 @@ from sqlalchemy import Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.animal import Animal
-from app.models.lookups import AnimalBreed, AnimalType
+from app.models.lookups import AnimalBreed, AnimalSex, AnimalType, OutcomeType
 
 
 def _apply_filters(
@@ -10,7 +10,10 @@ def _apply_filters(
     *,
     q: str | None,
     animal_type: str | None,
+    include_archived: bool = False,
 ) -> Select:
+    if not include_archived:
+        stmt = stmt.where(Animal.archived_at.is_(None))
     if animal_type:
         stmt = stmt.where(Animal.animal_type_ref.has(AnimalType.name.ilike(animal_type)))
     if q:
@@ -32,8 +35,11 @@ async def search_animals(
     animal_type: str | None = None,
     page: int = 1,
     page_size: int = 20,
+    include_archived: bool = False,
 ) -> tuple[list[Animal], int]:
-    filtered = _apply_filters(select(Animal), q=q, animal_type=animal_type)
+    filtered = _apply_filters(
+        select(Animal), q=q, animal_type=animal_type, include_archived=include_archived
+    )
 
     total = await session.scalar(select(func.count()).select_from(filtered.subquery()))
 
@@ -44,8 +50,20 @@ async def search_animals(
 
 
 async def get_animal_by_id(session: AsyncSession, animal_pk: int) -> Animal | None:
-    result = await session.execute(select(Animal).where(Animal.id == animal_pk))
+    # populate_existing so a fetch after an update re-reads the row and its
+    # joined lookup refs instead of returning stale identity-map state.
+    result = await session.execute(
+        select(Animal).where(Animal.id == animal_pk).execution_options(populate_existing=True)
+    )
     return result.scalar_one_or_none()
+
+
+async def get_lookup_id_by_name(
+    session: AsyncSession,
+    model: type[AnimalBreed | AnimalSex | AnimalType | OutcomeType],
+    name: str,
+) -> int | None:
+    return await session.scalar(select(model.id).where(model.name == name))
 
 
 async def breed_summary(
@@ -67,7 +85,7 @@ async def breed_summary(
     ).group_by(AnimalBreed.name)
     stmt = stmt.order_by(func.count().desc(), AnimalBreed.name)
 
-    rows = [(name, count) for name, count in (await session.execute(stmt)).all()]
+    rows = list((await session.execute(stmt)).tuples().all())
     top = rows[:limit]
     other_count = sum(count for _, count in rows[limit:])
     total_animals = sum(count for _, count in rows)

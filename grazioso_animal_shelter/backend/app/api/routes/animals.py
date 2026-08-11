@@ -3,8 +3,15 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db
-from app.schemas.animal import AnimalOut, AnimalPage, BreedCount, BreedSummary
+from app.api.deps import StaffUser, get_current_user, get_db
+from app.schemas.animal import (
+    AnimalCreate,
+    AnimalOut,
+    AnimalPage,
+    AnimalUpdate,
+    BreedCount,
+    BreedSummary,
+)
 from app.services import animal_service
 
 router = APIRouter(
@@ -21,9 +28,15 @@ async def search_animals(
     animal_type: Annotated[str | None, Query(max_length=50)] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    include_archived: Annotated[bool, Query()] = False,
 ) -> AnimalPage:
     animals, total = await animal_service.search_animals(
-        db, q=q, animal_type=animal_type, page=page, page_size=page_size
+        db,
+        q=q,
+        animal_type=animal_type,
+        page=page,
+        page_size=page_size,
+        include_archived=include_archived,
     )
     return AnimalPage(
         items=[AnimalOut.model_validate(a) for a in animals],
@@ -55,6 +68,67 @@ async def get_breed_summary(
 async def get_animal(animal_pk: int, db: Annotated[AsyncSession, Depends(get_db)]) -> AnimalOut:
     try:
         animal = await animal_service.get_animal(db, animal_pk)
+    except animal_service.AnimalNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Animal not found"
+        ) from exc
+    return AnimalOut.model_validate(animal)
+
+
+@router.post("", response_model=AnimalOut, status_code=status.HTTP_201_CREATED)
+async def create_animal(
+    payload: AnimalCreate, db: Annotated[AsyncSession, Depends(get_db)], actor: StaffUser
+) -> AnimalOut:
+    try:
+        animal = await animal_service.create_animal(db, payload.model_dump(), actor=actor)
+    except animal_service.UnknownLookupValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Unknown value for {exc.field}"
+        ) from exc
+    return AnimalOut.model_validate(animal)
+
+
+@router.patch("/{animal_pk}", response_model=AnimalOut)
+async def update_animal(
+    animal_pk: int,
+    payload: AnimalUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    actor: StaffUser,
+) -> AnimalOut:
+    try:
+        animal = await animal_service.update_animal(
+            db, animal_pk, payload.model_dump(exclude_unset=True), actor=actor
+        )
+    except animal_service.AnimalNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Animal not found"
+        ) from exc
+    except animal_service.UnknownLookupValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Unknown value for {exc.field}"
+        ) from exc
+    return AnimalOut.model_validate(animal)
+
+
+@router.post("/{animal_pk}/archive", response_model=AnimalOut)
+async def archive_animal(
+    animal_pk: int, db: Annotated[AsyncSession, Depends(get_db)], actor: StaffUser
+) -> AnimalOut:
+    try:
+        animal = await animal_service.set_archived(db, animal_pk, archived=True, actor=actor)
+    except animal_service.AnimalNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Animal not found"
+        ) from exc
+    return AnimalOut.model_validate(animal)
+
+
+@router.post("/{animal_pk}/unarchive", response_model=AnimalOut)
+async def unarchive_animal(
+    animal_pk: int, db: Annotated[AsyncSession, Depends(get_db)], actor: StaffUser
+) -> AnimalOut:
+    try:
+        animal = await animal_service.set_archived(db, animal_pk, archived=False, actor=actor)
     except animal_service.AnimalNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Animal not found"
