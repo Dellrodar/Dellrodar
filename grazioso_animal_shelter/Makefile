@@ -3,7 +3,7 @@
 
 COMPOSE = docker compose
 
-.PHONY: start stop restart rebuild logs test test-backend test-frontend lint-backend lint-frontend
+.PHONY: start stop restart rebuild logs test test-backend test-frontend lint-backend lint-frontend migrate-deployed
 
 start:
 	$(COMPOSE) up -d
@@ -39,3 +39,8 @@ lint-backend:
 
 lint-frontend:
 	docker exec cs499-frontend npm run lint
+
+# Runs alembic upgrade head against the deployed database by invoking the
+# migration Lambda (see /infrastructure). Deploy new migration code first.
+migrate-deployed:
+	aws lambda invoke --function-name grazioso-migration-runner --region us-east-2 --cli-binary-format raw-in-base64-out --payload '{}' /dev/stdout
