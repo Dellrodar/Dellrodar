@@ -3,8 +3,12 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { RequireAuth } from "../auth/RequireAuth";
 import { RequireRole } from "../auth/RequireRole";
 import { NavBar } from "../components/NavBar";
+import { AddAnimalPage } from "../pages/AddAnimalPage";
 import { AdminPage } from "../pages/AdminPage";
+import { AnimalDetailPage } from "../pages/AnimalDetailPage";
+import { AnimalManagePage } from "../pages/AnimalManagePage";
 import { DashboardPage } from "../pages/DashboardPage";
+import { EditAnimalPage } from "../pages/EditAnimalPage";
 import { ForbiddenPage } from "../pages/ForbiddenPage";
 import { LoginPage } from "../pages/LoginPage";
 import { SignupPage } from "../pages/SignupPage";
@@ -24,6 +28,38 @@ export const AppRouter = () => (
             <RequireAuth>
               <DashboardPage />
             </RequireAuth>
+          }
+        />
+        <Route
+          path="/animals/new"
+          element={
+            <RequireRole allowed={["staff", "admin"]}>
+              <AddAnimalPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/animals/manage"
+          element={
+            <RequireRole allowed={["staff", "admin"]}>
+              <AnimalManagePage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/animals/:id"
+          element={
+            <RequireAuth>
+              <AnimalDetailPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/animals/:id/edit"
+          element={
+            <RequireRole allowed={["staff", "admin"]}>
+              <EditAnimalPage />
+            </RequireRole>
           }
         />
         <Route
