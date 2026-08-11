@@ -27,8 +27,8 @@ Verified implemented in the code as of commit `1232f80`:
 | Enhancement plan | Add / update / archive animal endpoints | Done 2026-08-10, POST, PATCH, and archive/unarchive routes with lookup validation |
 | Enhancement plan | Staff role gating animal management | Done 2026-08-10, write routes require staff or admin via `require_role` |
 | Enhancement plan | Archive instead of hard delete | Done 2026-08-10, `archived_at` column via migration 0005, archived records excluded from search and matches but retrievable by id |
-| Enhancement plan | Audit logging of admin and animal changes | Missing, no audit table or log calls |
-| Enhancement plan | Admin can remove accounts | Partial, disable exists but no delete endpoint |
+| Enhancement plan | Audit logging of admin and animal changes | Done 2026-08-10, `audit_log` table via migration 0006 with log calls on all admin and animal mutations |
+| Enhancement plan | Admin can remove accounts | Done 2026-08-10, `DELETE /admin/users/{id}` with a self-delete guard, audit rows survive actor deletion |
 | Enhancement plan | Staff/admin animal management UI flows | Missing, backend now in place so workstream 6 is unblocked |
 | Pseudocode flows | Animal detail view from search results | Missing, backend detail endpoint exists but no frontend view |
 | Pseudocode flows | Update path via management page with typeahead | Missing, second update path in the flows |
@@ -93,8 +93,9 @@ All items completed 2026-08-10, full suite of 57 backend tests passing.
 ## Workstream 3: Backend hardening and audit logging
 
 - [ ] Server-side self-change guard: reject role or status changes targeting the acting admin's own account, matching what the UI already prevents
-- [ ] Audit logging for admin and animal mutations, a simple `audit_log` table with actor, action, target, and timestamp satisfies the enhancement plan
-- [ ] Decide on account removal: either add `DELETE /admin/users/{id}` or document disable-only as the intentional design (recommended, it preserves audit history)
+- [x] Audit logging for admin and animal mutations, done 2026-08-10 via migration 0006: `audit_log` records actor id and email snapshot, action, target, detail, and timestamp in the same transaction as each mutation, with shared actor dependencies (`CurrentUser`, `StaffUser`, `AdminUser`) in `deps.py` attributing every change
+- [x] Account removal added 2026-08-10: `DELETE /admin/users/{id}` returns 204, rejects self-deletion with 400, logs the deletion, and the actor FK sets null on delete so audit history is preserved
+- [ ] Admin UI has no delete-account action yet, the endpoint is backend-only until the admin panel adds it
 
 ## Workstream 4: Frontend session expiry
 

@@ -53,3 +53,11 @@ def require_role(*allowed_roles: str) -> Callable[[User], User]:
         return user
 
     return dependency
+
+
+# Shared actor annotations: each resolves the authenticated user from the
+# request token, enforces the required role, and hands the acting user to
+# the endpoint for audit attribution.
+CurrentUser = Annotated[User, Depends(get_current_user)]
+StaffUser = Annotated[User, Depends(require_role("staff", "admin"))]
+AdminUser = Annotated[User, Depends(require_role("admin"))]
