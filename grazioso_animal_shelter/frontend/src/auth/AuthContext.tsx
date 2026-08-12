@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { fetchCurrentUser, login as loginRequest, type User } from "../api/auth";
 import { setUnauthorizedHandler } from "../api/client";
+import { getTokenExpiryMs } from "./tokenUtils";
 
 const TOKEN_STORAGE_KEY = "grazioso.token";
 
@@ -92,6 +93,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUnauthorizedHandler(handleSessionExpired);
     return () => setUnauthorizedHandler(null);
   }, [handleSessionExpired]);
+
+  // Proactive sign-out at the token's exp time, so an idle user sees the
+  // session-expired message instead of a silent 401 on their next click.
+  // A token without a readable exp claim falls back to the 401 path above.
+  useEffect(() => {
+    if (!token) return undefined;
+    const expiresAtMs = getTokenExpiryMs(token);
+    if (expiresAtMs === null) return undefined;
+
+    const msUntilExpiry = expiresAtMs - Date.now();
+    if (msUntilExpiry <= 0) {
+      handleSessionExpired();
+      return undefined;
+    }
+
+    const timerId = setTimeout(handleSessionExpired, Math.min(msUntilExpiry, 2 ** 31 - 1));
+    return () => clearTimeout(timerId);
+  }, [token, handleSessionExpired]);
 
   const value = useMemo(
     () => ({ user, token, isLoading, sessionExpired, login, logout }),
