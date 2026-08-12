@@ -4,20 +4,22 @@ Single source of truth for all remaining work, produced from a full audit of the
 
 ## Where things stand
 
-Verified implemented in the code as of commit `1232f80`:
+Verified implemented in the code as of commit `22876e8`, re-audited 2026-08-11:
 
 - Full-stack monorepo: FastAPI backend, React frontend, Postgres with Alembic migrations 0001 through 0004
 - Auth complete: signup, login, JWT, bcrypt, default viewer role, account-active checks on both login and every authenticated request
 - Normalized schema with four lookup tables, rescue profile tables, and pg_trgm trigram indexing on breed names
 - Rescue-profile matching endpoint with weighted breed/age/sex/availability scoring, ranking, and pagination
 - Animal search by name, breed, and animal ID with type filter and pagination, plus breed-summary endpoint, admin seed script, and idempotent CSV importer
-- Admin user management (list, change role, toggle active) behind `require_role("admin")`
+- Admin user management (list, change role, toggle active, delete with self-delete guard) behind `require_role("admin")`
+- Backend animal management: create, partial update, archive/unarchive with lookup validation, staff/admin gating, and audit logging on every mutation
+- Animal management UI: add form, edit page with archive/unarchive confirmation, manage page with typeahead, detail page, role-gated nav and routes, all tested
 - MUI migration essentially done: theme with light/dark schemes, AppBar shell with logo and active-route styling, auth cards with password toggle and loading states, dashboard DataGrid with server pagination and page-size selector, outcome chips, match-score progress bars with component-score tooltips, admin panel with Snackbar feedback, self-edit lockout in the UI, and skeleton loading states
 - Global 401 handling: expired tokens clear auth state and redirect to login
 - SPA rewrite in `vercel.json`, so deep links work
 - Deployment live: Vercel (frontend + backend), Neon Postgres, migrations applied, admin seeded, 10000 animals imported, site verified end to end
 - AWS Lambda migration runner built, deployed to us-east-2, and test-invoked
-- Test suites: 6 backend modules (41 tests) and 17 frontend files (~88 cases), including axe accessibility audits
+- Test suites: 10 backend modules and 25 frontend files, including axe accessibility audits
 - Portfolio site: code review page, all three enhancement pages with reflections, profile photo wired up
 
 ## Gap analysis
@@ -29,9 +31,9 @@ Verified implemented in the code as of commit `1232f80`:
 | Enhancement plan | Archive instead of hard delete | Done 2026-08-10, `archived_at` column via migration 0005, archived records excluded from search and matches but retrievable by id |
 | Enhancement plan | Audit logging of admin and animal changes | Done 2026-08-10, `audit_log` table via migration 0006 with log calls on all admin and animal mutations |
 | Enhancement plan | Admin can remove accounts | Done 2026-08-10, `DELETE /admin/users/{id}` with a self-delete guard, audit rows survive actor deletion |
-| Enhancement plan | Staff/admin animal management UI flows | Missing, backend now in place so workstream 6 is unblocked |
-| Pseudocode flows | Animal detail view from search results | Missing, backend detail endpoint exists but no frontend view |
-| Pseudocode flows | Update path via management page with typeahead | Missing, second update path in the flows |
+| Enhancement plan | Staff/admin animal management UI flows | Done 2026-08-11, add/edit/manage pages with lookup selects, archive with confirmation, role-gated nav and routes, all with tests |
+| Pseudocode flows | Animal detail view from search results | Partial, detail page exists at `/animals/:id` but dashboard search rows do not link to it |
+| Pseudocode flows | Update path via management page with typeahead | Done 2026-08-11, manage page typeahead loads the selected record into the edit form |
 | Pseudocode flows | Optional filters in match mode | Missing, matches endpoint accepts only pagination |
 | Enhancement plan | Google SSO, staff domain recognition | Deferred stretch, never started |
 | Improvements backlog | Session-expired message on login page | Partial, 401 signs the user out but shows no explanation |
@@ -58,7 +60,7 @@ Checked against the CS 499 Final Project Guidelines and Rubric on 2026-08-09. Th
 | Original artifact accessible, "the work before you began your enhancements" | Gap, `grazioso_animal_shelter_dashboard` exists in the repo but no page links to it, a grader would have to hunt |
 | Narrative per artifact: describe, justify, reflect | Met, all three pages follow that structure with trade-offs and outcome alignment |
 | Narrative states when the artifact was created | Gap, pages say "originally built in CS 340" with no term or year |
-| Self-assessment as the first thing presented | Met structurally, it is the first card on the homepage, but the page itself is still a scaffold |
+| Self-assessment as the first thing presented | Gap, the homepage card was commented out on 2026-08-09 until the prose is written, so it must be restored when workstream 1 lands |
 | Self-assessment addresses the five required topics with examples beyond the artifacts | Gap, this is the workstream 1 prose |
 | Self-assessment summarizes how the artifacts fit together | Met, that section is already written on the page |
 | GitHub Pages organized and navigable, not raw file listings | Met, resume theme with card navigation to every component |
@@ -70,7 +72,8 @@ Course outcome evidence map: outcome 3 (algorithms and trade-offs) is strongly c
 
 - [ ] Write the six self-assessment sections in `docs/self-assessment.md`, replacing the bracketed prompts for background, team collaboration, stakeholder communication, data structures and algorithms, software engineering and databases, and security
 - [ ] Remove the structural-draft TODO comment at the top of that file
-- [ ] Commit the staged `docs/_config.yml` change that deep-links the Projects card to `grazioso_animal_shelter`
+- [ ] Restore the self-assessment card on the homepage, commented out in `docs/_config.yml` on 2026-08-09 until the prose is written
+- [x] Commit the staged `docs/_config.yml` change that deep-links the Projects card to `grazioso_animal_shelter`, landed 2026-08-09 in the plan-consolidation commit
 - [x] Confirm `docs/_site` is gitignored so stale local builds never publish, verified 2026-08-09 via `docs/.gitignore`
 - [x] Resolve the archive claim: workstream 2 implemented 2026-08-10, so the security bullets on enhancement one and enhancement three now match the code
 - [ ] Add an "Original artifact" link on the enhancement pages and the homepage Projects card pointing to `grazioso_animal_shelter_dashboard` so the pre-enhancement work is one click away
@@ -113,14 +116,14 @@ The 401 plumbing already exists in `client.ts` and `AuthContext.tsx`; this is th
 
 ## Workstream 6: Animal management UI (after workstream 2)
 
-Implements the Staff Animal Management flows from the pseudocode.
+Implements the Staff Animal Management flows from the pseudocode. Bulk of the work landed 2026-08-11 in the animal-management PR; two dashboard entry points remain.
 
-- [ ] Add Animal entry in the navigation for staff and admin, opening a form with lookup-value selects and validation
-- [ ] Edit icon on dashboard search rows for staff and admin, loading the record into an edit page with all fields
-- [ ] Animal management page with typeahead search that loads the selected record into the same update form, the second update path in the flows
-- [ ] Animal detail view when any user selects a search result, completing the general search flow, the backend detail endpoint already exists
-- [ ] Archive action with a confirmation dialog
-- [ ] Frontend tests for the new flows and role-based visibility
+- [x] Add Animal entry in the navigation for staff and admin, opening a form with lookup-value selects and validation, done 2026-08-11 via `AddAnimalPage` and `AnimalForm`
+- [ ] Edit icon on dashboard search rows for staff and admin, loading the record into an edit page with all fields, `EditAnimalPage` exists but no dashboard row links to it
+- [x] Animal management page with typeahead search that loads the selected record into the same update form, done 2026-08-11 via `AnimalManagePage` Autocomplete navigating to the edit page
+- [ ] Animal detail view when any user selects a search result, `AnimalDetailPage` is routed at `/animals/:id` but dashboard search rows do not navigate to it
+- [x] Archive action with a confirmation dialog, done 2026-08-11 on the edit page via `ConfirmDialog` with unarchive and an archived-state banner
+- [x] Frontend tests for the new flows and role-based visibility, done 2026-08-11 covering the form, all four pages, the confirm dialog, nav visibility, and router role gating
 
 ## Workstream 7: Deployment stretch (optional)
 
