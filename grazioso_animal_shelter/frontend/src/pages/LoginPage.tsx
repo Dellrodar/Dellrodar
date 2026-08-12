@@ -12,7 +12,11 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/client";
-import { useAuth } from "../auth/AuthContext";
+import {
+  SESSION_EXPIRED_REASON,
+  useAuth,
+  type LoginRedirectState,
+} from "../auth/AuthContext";
 import { AuthCard } from "../components/AuthCard";
 import { usePageTitle } from "../hooks/usePageTitle";
 
@@ -28,7 +32,9 @@ export const LoginPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? "/dashboard";
+  const redirectState = location.state as LoginRedirectState | null;
+  const from = redirectState?.from?.pathname ?? "/dashboard";
+  const sessionExpired = redirectState?.reason === SESSION_EXPIRED_REASON;
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -48,6 +54,11 @@ export const LoginPage = () => {
   return (
     <AuthCard title="Log in">
       <Stack component="form" onSubmit={handleSubmit} sx={{ gap: 2 }}>
+        {sessionExpired && !error && (
+          <Alert severity="warning" role="status">
+            Your session has expired. Please log in again.
+          </Alert>
+        )}
         <TextField
           label="Email"
           type="email"

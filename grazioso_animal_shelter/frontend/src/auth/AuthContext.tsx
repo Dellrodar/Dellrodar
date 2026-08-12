@@ -5,10 +5,18 @@ import { setUnauthorizedHandler } from "../api/client";
 
 const TOKEN_STORAGE_KEY = "grazioso.token";
 
+export const SESSION_EXPIRED_REASON = "session-expired";
+
+export interface LoginRedirectState {
+  from?: { pathname: string };
+  reason?: typeof SESSION_EXPIRED_REASON;
+}
+
 interface AuthContextValue {
   user: User | null;
   token: string | null;
   isLoading: boolean;
+  sessionExpired: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -19,6 +27,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_STORAGE_KEY));
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -57,6 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { access_token } = await loginRequest(email, password);
     localStorage.setItem(TOKEN_STORAGE_KEY, access_token);
     setToken(access_token);
+    setSessionExpired(false);
   }, []);
 
   const logout = useCallback(() => {
@@ -65,20 +75,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
   }, []);
 
+  // The flag rides through context instead of a navigate() call here because
+  // react-router wraps navigation in startTransition: the logout state change
+  // would commit first and RequireAuth's redirect would drop the reason.
+  // RequireAuth reads the flag and puts the reason into its own redirect state.
+  const handleSessionExpired = useCallback(() => {
+    console.warn("Session is no longer valid; signing out.");
+    setSessionExpired(true);
+    logout();
+  }, [logout]);
+
   // Any authenticated request rejected with 401 means the token expired or was
   // revoked. Dropping the session here makes the route guards redirect to the
   // login page, preserving the location the user came from.
   useEffect(() => {
-    setUnauthorizedHandler(() => {
-      console.warn("Session is no longer valid; signing out.");
-      logout();
-    });
+    setUnauthorizedHandler(handleSessionExpired);
     return () => setUnauthorizedHandler(null);
-  }, [logout]);
+  }, [handleSessionExpired]);
 
   const value = useMemo(
-    () => ({ user, token, isLoading, login, logout }),
-    [user, token, isLoading, login, logout],
+    () => ({ user, token, isLoading, sessionExpired, login, logout }),
+    [user, token, isLoading, sessionExpired, login, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

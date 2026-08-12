@@ -7,7 +7,9 @@ import { LoginPage } from "../../src/pages/LoginPage";
 
 const mockLogin = vi.fn();
 
-vi.mock("../../src/auth/AuthContext", () => ({
+// Keep the real SESSION_EXPIRED_REASON export; only useAuth is stubbed.
+vi.mock("../../src/auth/AuthContext", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../src/auth/AuthContext")>()),
   useAuth: () => ({ login: mockLogin }),
 }));
 
@@ -82,5 +84,49 @@ describe("LoginPage", () => {
   it("links to the signup page", () => {
     renderLoginPage();
     expect(screen.getByRole("link", { name: "Sign up" })).toHaveAttribute("href", "/signup");
+  });
+
+  it("shows the session-expired message when redirected with the reason", () => {
+    renderLoginPage([{ pathname: "/login", state: { reason: "session-expired" } }]);
+
+    const alert = screen.getByRole("status");
+    expect(alert).toHaveTextContent("Your session has expired. Please log in again.");
+  });
+
+  it("shows no session-expired message when navigating to the page directly", () => {
+    renderLoginPage();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("returns to the original page after logging back in from an expired session", async () => {
+    const user = userEvent.setup();
+    mockLogin.mockResolvedValue(undefined);
+    renderLoginPage([
+      {
+        pathname: "/login",
+        state: { reason: "session-expired", from: { pathname: "/admin" } },
+      },
+    ]);
+
+    expect(screen.getByRole("status")).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Email"), "admin@example.com");
+    await user.type(screen.getByLabelText("Password"), "password123");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    expect(await screen.findByText("Admin page")).toBeInTheDocument();
+  });
+
+  it("replaces the session-expired message with the error when re-login fails", async () => {
+    const user = userEvent.setup();
+    mockLogin.mockRejectedValue(new ApiError(401, "Invalid email or password"));
+    renderLoginPage([{ pathname: "/login", state: { reason: "session-expired" } }]);
+
+    await user.type(screen.getByLabelText("Email"), "viewer@example.com");
+    await user.type(screen.getByLabelText("Password"), "wrong-password");
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    expect(await screen.findByText("Invalid email or password")).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 });
