@@ -113,7 +113,8 @@ Both items completed 2026-08-11.
 
 - [x] Extend `GET /animals/breed-summary` to accept a rescue-profile parameter, done 2026-08-12, a `profile_id` query param resolves to the profile's animal type id server-side with 404 on unknown profiles, and `DashboardPage` now sends `profileId` instead of the `animal_type` workaround
 - [x] Resolve the map scope inconsistency in match mode, done 2026-08-12 by labeling rather than refetching, both modes now caption the chart as covering the full set and the map as covering the current page
-- [x] Add explicit `aria-live` roles, done 2026-08-12, error alerts on the login, signup, admin, and dashboard pages carry `role="alert"`, the dashboard ranking banner carries `role="status"`, and the admin Snackbar announces politely via `slotProps`, all asserted in tests, keyboard walk still to be done manually in a browser
+- [x] Add explicit `aria-live` roles, done 2026-08-12, error alerts on the login, signup, admin, and dashboard pages carry `role="alert"`, the dashboard ranking banner carries `role="status"`, and the admin Snackbar announces politely via `slotProps`, all asserted in tests
+- [x] Keyboard walk of every page, done 2026-08-12 in Chrome against fresh containers, login and signup forms, dashboard selects, search, grid, pagination, and map markers, admin role change, delete dialog focus trap, and snackbars, add form, manage typeahead into the edit page, and the archive dialog all operate keyboard-only with visible focus and live announcements
 - [x] Manual contrast check of muted text tokens, done 2026-08-12, all four muted tokens pass WCAG AA in both schemes, table below
 
 ### Contrast audit (2026-08-12)
