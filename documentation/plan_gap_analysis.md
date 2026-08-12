@@ -15,11 +15,11 @@ Verified implemented in the code as of commit `22876e8`, re-audited 2026-08-11:
 - Backend animal management: create, partial update, archive/unarchive with lookup validation, staff/admin gating, and audit logging on every mutation
 - Animal management UI: add form, edit page with archive/unarchive confirmation, manage page with typeahead, detail page, role-gated nav and routes, all tested
 - MUI migration essentially done: theme with light/dark schemes, AppBar shell with logo and active-route styling, auth cards with password toggle and loading states, dashboard DataGrid with server pagination and page-size selector, outcome chips, match-score progress bars with component-score tooltips, admin panel with Snackbar feedback, self-edit lockout in the UI, and skeleton loading states
-- Global 401 handling: expired tokens clear auth state and redirect to login
+- Global 401 handling: expired tokens clear auth state and redirect to login with a session-expired message; the JWT `exp` claim also triggers a proactive sign-out the moment the token expires
 - SPA rewrite in `vercel.json`, so deep links work
 - Deployment live: Vercel (frontend + backend), Neon Postgres, migrations applied, admin seeded, 10000 animals imported, site verified end to end
 - AWS Lambda migration runner built, deployed to us-east-2, and test-invoked
-- Test suites: 10 backend modules and 25 frontend files, including axe accessibility audits
+- Test suites: 10 backend modules and 27 frontend files, including axe accessibility audits
 - Portfolio site: code review page, all three enhancement pages with reflections, profile photo wired up
 
 ## Gap analysis
@@ -36,8 +36,8 @@ Verified implemented in the code as of commit `22876e8`, re-audited 2026-08-11:
 | Pseudocode flows | Update path via management page with typeahead | Done 2026-08-11, manage page typeahead loads the selected record into the edit form |
 | Pseudocode flows | Optional filters in match mode | Missing, matches endpoint accepts only pagination |
 | Enhancement plan | Google SSO, staff domain recognition | Deferred stretch, never started |
-| Improvements backlog | Session-expired message on login page | Partial, 401 signs the user out but shows no explanation |
-| Improvements backlog | Session-timeout warning from JWT `exp` | Missing, marked optional |
+| Improvements backlog | Session-expired message on login page | Done 2026-08-11, RequireAuth carries a session-expired reason in its redirect state and LoginPage renders it as a `role="status"` Alert |
+| Improvements backlog | Session-timeout warning from JWT `exp` | Done 2026-08-11, the decoded `exp` claim schedules a proactive sign-out that shows the same message |
 | Frontend plan phase 2 | NavBar user Avatar + Menu | Partial, inline Chip + button instead |
 | Frontend plan phase 4 | Breed-summary endpoint accepts a profile | Missing, frontend works around it with `animal_type` |
 | Frontend plan phase 4 | Map scope in match mode | Missing, map shows current page while chart shows full pool |
@@ -104,8 +104,10 @@ All items completed 2026-08-10, full suite of 57 backend tests passing.
 
 The 401 plumbing already exists in `client.ts` and `AuthContext.tsx`; this is the last mile.
 
-- [ ] Pass a session-expired reason through navigation state when the 401 handler signs the user out, and render it as an Alert on `LoginPage`
-- [ ] Optional: decode the JWT `exp` claim and warn shortly before expiry or log out proactively
+Both items completed 2026-08-11.
+
+- [x] Pass a session-expired reason through navigation state when the 401 handler signs the user out, and render it as an Alert on `LoginPage`, done 2026-08-11 via a `sessionExpired` context flag that `RequireAuth` folds into its redirect state, since a direct `navigate` call from the 401 handler loses the race against react-router's startTransition
+- [x] Optional: decode the JWT `exp` claim and warn shortly before expiry or log out proactively, done 2026-08-11 with `getTokenExpiryMs` in `tokenUtils.ts` and a timer in `AuthContext` that signs out at the exp time with the same session-expired message
 
 ## Workstream 5: Frontend visual gaps (former phases 4 and 6)
 
