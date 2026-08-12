@@ -52,11 +52,17 @@ async def get_breed_summary(
     db: Annotated[AsyncSession, Depends(get_db)],
     q: Annotated[str | None, Query(max_length=100)] = None,
     animal_type: Annotated[str | None, Query(max_length=50)] = None,
+    profile_id: Annotated[int | None, Query(ge=1)] = None,
     limit: Annotated[int, Query(ge=1, le=25)] = 10,
 ) -> BreedSummary:
-    top, other_count, total_animals = await animal_service.breed_summary(
-        db, q=q, animal_type=animal_type, limit=limit
-    )
+    try:
+        top, other_count, total_animals = await animal_service.breed_summary(
+            db, q=q, animal_type=animal_type, profile_id=profile_id, limit=limit
+        )
+    except animal_service.ProfileNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Rescue profile not found"
+        ) from exc
     return BreedSummary(
         items=[BreedCount(breed=breed, count=count) for breed, count in top],
         other_count=other_count,

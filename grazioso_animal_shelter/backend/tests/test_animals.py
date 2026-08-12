@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy import text
 
 from tests.conftest import TestSessionLocal
-from tests.factories import LOOKUP_CLEANUP_ORDER, create_animal
+from tests.factories import LOOKUP_CLEANUP_ORDER, create_animal, create_profile
 
 
 async def _signup_and_login(client, email: str, password: str = "password123") -> str:
@@ -55,6 +55,22 @@ async def seeded_animals():
         await session.execute(text("DELETE FROM animals"))
         for table in LOOKUP_CLEANUP_ORDER:
             await session.execute(text(f"DELETE FROM {table}"))
+        await session.commit()
+
+
+# Depends on seeded_animals so the profile row is removed before the lookup
+# tables it references are wiped in that fixture's teardown.
+@pytest.fixture
+async def dog_profile_id(seeded_animals):
+    async with TestSessionLocal() as session:
+        profile = await create_profile(session, name="Dog Rescue", animal_type="Dog")
+        await session.commit()
+        profile_id = profile.id
+
+    yield profile_id
+
+    async with TestSessionLocal() as session:
+        await session.execute(text("DELETE FROM rescue_profiles"))
         await session.commit()
 
 
@@ -166,6 +182,59 @@ async def test_breed_summary_applies_text_search(client, seeded_animals):
     token = await _signup_and_login(client, "searcher11@example.com")
     resp = await client.get(
         "/api/v1/animals/breed-summary", params={"q": "shepherd"}, headers=_auth(token)
+    )
+    body = resp.json()
+    assert body["total_animals"] == 1
+    assert body["items"] == [{"breed": "German Shepherd", "count": 1}]
+
+
+async def test_breed_summary_scopes_to_profile_candidate_pool(client, dog_profile_id):
+    token = await _signup_and_login(client, "searcher12@example.com")
+    resp = await client.get(
+        "/api/v1/animals/breed-summary",
+        params={"profile_id": dog_profile_id},
+        headers=_auth(token),
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total_animals"] == 2
+    breeds = {item["breed"]: item["count"] for item in body["items"]}
+    assert breeds == {"Labrador Retriever Mix": 1, "German Shepherd": 1}
+
+
+async def test_breed_summary_profile_excludes_archived_animals(client, dog_profile_id):
+    token = await _signup_and_login(client, "searcher13@example.com")
+    async with TestSessionLocal() as session:
+        await session.execute(
+            text("UPDATE animals SET archived_at = now() WHERE animal_id = 'A000002'")
+        )
+        await session.commit()
+
+    resp = await client.get(
+        "/api/v1/animals/breed-summary",
+        params={"profile_id": dog_profile_id},
+        headers=_auth(token),
+    )
+    body = resp.json()
+    assert body["total_animals"] == 1
+    assert body["items"] == [{"breed": "Labrador Retriever Mix", "count": 1}]
+
+
+async def test_breed_summary_unknown_profile_returns_404(client, seeded_animals):
+    token = await _signup_and_login(client, "searcher14@example.com")
+    resp = await client.get(
+        "/api/v1/animals/breed-summary", params={"profile_id": 999999}, headers=_auth(token)
+    )
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "Rescue profile not found"
+
+
+async def test_breed_summary_profile_composes_with_text_search(client, dog_profile_id):
+    token = await _signup_and_login(client, "searcher15@example.com")
+    resp = await client.get(
+        "/api/v1/animals/breed-summary",
+        params={"profile_id": dog_profile_id, "q": "shepherd"},
+        headers=_auth(token),
     )
     body = resp.json()
     assert body["total_animals"] == 1

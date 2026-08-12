@@ -194,26 +194,24 @@ export const DashboardPage = () => {
   }, [token, search, page, pageSize, profileId]);
 
   // The chart covers the whole filtered set — or, in match mode, the profile's
-  // full candidate pool (every animal of its type) — so it refetches on new
-  // searches and profile changes but not on page turns.
+  // full candidate pool, scoped server-side by profile_id — so it refetches on
+  // new searches and profile changes but not on page turns.
   useEffect(() => {
     if (!token) return;
 
-    const profile = profileId === null ? null : profiles.find((p) => p.id === profileId);
-    if (profileId !== null && !profile) return;
-
-    const params = profile
-      ? { animalType: profile.animal_type, limit: TOP_BREEDS }
-      : {
-          q: search.q || undefined,
-          animalType: search.animalType || undefined,
-          limit: TOP_BREEDS,
-        };
+    const params =
+      profileId !== null
+        ? { profileId, limit: TOP_BREEDS }
+        : {
+            q: search.q || undefined,
+            animalType: search.animalType || undefined,
+            limit: TOP_BREEDS,
+          };
 
     getBreedSummary(token, params)
       .then(setBreedSummary)
       .catch(() => setBreedSummary(null));
-  }, [token, search, profileId, profiles]);
+  }, [token, search, profileId]);
 
   useEffect(() => {
     if (!token || profileId === null) return;

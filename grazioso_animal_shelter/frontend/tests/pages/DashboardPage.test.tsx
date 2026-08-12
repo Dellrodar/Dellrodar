@@ -303,7 +303,7 @@ describe("DashboardPage", () => {
     expect(await screen.findByText("Breed distribution")).toBeInTheDocument();
     expect(await screen.findByText("608 · 11%")).toBeInTheDocument();
     expect(mockGetBreedSummary).toHaveBeenLastCalledWith("user-token", {
-      animalType: "Dog",
+      profileId: 1,
       limit: 5,
     });
   });

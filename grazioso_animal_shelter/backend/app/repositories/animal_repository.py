@@ -10,12 +10,15 @@ def _apply_filters(
     *,
     q: str | None,
     animal_type: str | None,
+    animal_type_id: int | None = None,
     include_archived: bool = False,
 ) -> Select:
     if not include_archived:
         stmt = stmt.where(Animal.archived_at.is_(None))
     if animal_type:
         stmt = stmt.where(Animal.animal_type_ref.has(AnimalType.name.ilike(animal_type)))
+    if animal_type_id is not None:
+        stmt = stmt.where(Animal.animal_type_id == animal_type_id)
     if q:
         pattern = f"%{q}%"
         stmt = stmt.where(
@@ -71,6 +74,7 @@ async def breed_summary(
     *,
     q: str | None = None,
     animal_type: str | None = None,
+    animal_type_id: int | None = None,
     limit: int = 10,
 ) -> tuple[list[tuple[str, int]], int, int]:
     """Breed counts for the filtered animal set, largest first.
@@ -82,6 +86,7 @@ async def breed_summary(
         select(AnimalBreed.name, func.count()).join(Animal, Animal.breed_id == AnimalBreed.id),
         q=q,
         animal_type=animal_type,
+        animal_type_id=animal_type_id,
     ).group_by(AnimalBreed.name)
     stmt = stmt.order_by(func.count().desc(), AnimalBreed.name)
 
