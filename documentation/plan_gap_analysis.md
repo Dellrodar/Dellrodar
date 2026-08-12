@@ -39,10 +39,10 @@ Verified implemented in the code as of commit `22876e8`, re-audited 2026-08-11:
 | Improvements backlog | Session-expired message on login page | Done 2026-08-11, RequireAuth carries a session-expired reason in its redirect state and LoginPage renders it as a `role="status"` Alert |
 | Improvements backlog | Session-timeout warning from JWT `exp` | Done 2026-08-11, the decoded `exp` claim schedules a proactive sign-out that shows the same message |
 | Frontend plan phase 2 | NavBar user Avatar + Menu | Partial, inline Chip + button instead |
-| Frontend plan phase 4 | Breed-summary endpoint accepts a profile | Missing, frontend works around it with `animal_type` |
-| Frontend plan phase 4 | Map scope in match mode | Missing, map shows current page while chart shows full pool |
+| Frontend plan phase 4 | Breed-summary endpoint accepts a profile | Done 2026-08-12, `profile_id` query param scopes the summary to the profile's candidate pool |
+| Frontend plan phase 4 | Map scope in match mode | Done 2026-08-12, both visuals carry scope captions, chart full pool and map current page |
 | Frontend plan phase 5 | Role/status Chip badges in admin table | Partial, only a "You" chip |
-| Frontend plan phase 6 | Explicit `aria-live` on alerts and snackbar | Missing, relies on MUI defaults |
+| Frontend plan phase 6 | Explicit `aria-live` on alerts and snackbar | Done 2026-08-12, explicit `role="alert"`/`role="status"` on alerts and the admin Snackbar |
 | Backend (found in audit) | Self-demotion guard server-side | Done 2026-08-11, role and status changes on the acting admin's own account return 400 |
 | Deployment plan | Vercel deploy webhook triggers Lambda migration | Open stretch |
 | Deployment plan | Terraform port of `deploy_lambda.ps1` | Open stretch |
@@ -111,10 +111,21 @@ Both items completed 2026-08-11.
 
 ## Workstream 5: Frontend visual gaps (former phases 4 and 6)
 
-- [ ] Extend `GET /animals/breed-summary` to accept a rescue-profile parameter so the match-mode chart covers the true candidate pool, then drop the `animal_type` workaround in `DashboardPage`
-- [ ] Resolve the map scope inconsistency in match mode: either fetch the full match set for the map or label both visuals as page-scoped
-- [ ] Add explicit `aria-live` (or `role="status"`) to the auth-form alerts and the admin Snackbar, then keyboard-walk each page
-- [ ] Manual contrast check of muted text tokens in both schemes, the axe tests cannot cover this in jsdom
+- [x] Extend `GET /animals/breed-summary` to accept a rescue-profile parameter, done 2026-08-12, a `profile_id` query param resolves to the profile's animal type id server-side with 404 on unknown profiles, and `DashboardPage` now sends `profileId` instead of the `animal_type` workaround
+- [x] Resolve the map scope inconsistency in match mode, done 2026-08-12 by labeling rather than refetching, both modes now caption the chart as covering the full set and the map as covering the current page
+- [x] Add explicit `aria-live` roles, done 2026-08-12, error alerts on the login, signup, admin, and dashboard pages carry `role="alert"`, the dashboard ranking banner carries `role="status"`, and the admin Snackbar announces politely via `slotProps`, all asserted in tests, keyboard walk still to be done manually in a browser
+- [x] Manual contrast check of muted text tokens, done 2026-08-12, all four muted tokens pass WCAG AA in both schemes, table below
+
+### Contrast audit (2026-08-12)
+
+WCAG 2.1 relative-luminance ratios computed for every muted text token over its scheme background. All pass AA for normal text (4.5:1), so no changes were needed.
+
+| Token | Effective color | Ratio | AA 4.5:1 |
+|---|---|---|---|
+| MUI `text.secondary` light, rgba(0,0,0,0.6) on `#ffffff` | `#666666` | 5.74:1 | pass |
+| MUI `text.secondary` dark, rgba(255,255,255,0.7) on `#16171d` | `#b9b9bb` | 9.13:1 | pass |
+| `.breed-chart-total-label` / `.legend-value` light, `#2b2b33` at 0.7 opacity on `#ffffff` | `#6b6b70` | 5.30:1 | pass |
+| `.breed-chart-total-label` / `.legend-value` dark, `#e5e5ea` at 0.7 opacity on `#16171d` | `#a7a7ac` | 7.46:1 | pass |
 
 ## Workstream 6: Animal management UI (after workstream 2)
 

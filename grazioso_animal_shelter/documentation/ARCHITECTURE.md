@@ -151,15 +151,20 @@ The dashboard restores the CS 340 artifact's chart and map alongside its table:
   aggregate over the lookup join that honors the same `q`/`animal_type` filters as the table, so
   the chart covers the *whole* filtered set (not just the visible page) and refetches on new
   searches but not on page turns. Breeds beyond the top five fold into an "Other" bucket
-  server-side. In rescue-profile mode the chart is derived client-side from the current page of
-  ranked matches. The five categorical colors are a colorblind-validated fixed-order palette with
-  separate dark-mode steps; identity is never color-alone (every slice has a legend row with its
-  count and percentage, plus a hover tooltip).
+  server-side. In rescue-profile mode the same endpoint is called with `profile_id`, which the
+  backend resolves to the profile's animal type — the matcher's only hard filter — so the chart
+  covers the full candidate pool and its total equals the match list's total. The five
+  categorical colors are a colorblind-validated fixed-order palette with separate dark-mode
+  steps; identity is never color-alone (every slice has a legend row with its count and
+  percentage, plus a hover tooltip).
 - **Location map** (`frontend/src/components/AnimalMap.tsx`) — `react-leaflet` with
   OpenStreetMap tiles, showing a circle marker per animal on the current page (breed as tooltip,
   name as popup, matching the original dash-leaflet behavior). Animals without coordinates are
   skipped. Clicking a table row highlights that row, enlarges its marker, and recenters the map
   on it; the selection resets on search, page, and profile changes.
+- **Scope captions.** The two visuals cover different sets by design — the chart aggregates the
+  full filtered set or candidate pool while the map plots only the current page — so each carries
+  a caption stating its scope in both search and match mode.
 
 ## Deployment scope
 
