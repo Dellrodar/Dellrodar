@@ -17,7 +17,9 @@ const mockListRescueProfiles = vi.fn();
 const mockSearchRescueMatches = vi.fn();
 const mockListUsers = vi.fn();
 
-vi.mock("../src/auth/AuthContext", () => ({
+// Keep the real SESSION_EXPIRED_REASON export; only useAuth is stubbed.
+vi.mock("../src/auth/AuthContext", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../src/auth/AuthContext")>()),
   useAuth: () => mockUseAuth(),
 }));
 

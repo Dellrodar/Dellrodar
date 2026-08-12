@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "./AuthContext";
+import { SESSION_EXPIRED_REASON, useAuth, type LoginRedirectState } from "./AuthContext";
 
 export const RequireAuth = ({ children }: { children: ReactNode }) => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, sessionExpired } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -11,7 +11,10 @@ export const RequireAuth = ({ children }: { children: ReactNode }) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    const redirectState: LoginRedirectState = sessionExpired
+      ? { from: location, reason: SESSION_EXPIRED_REASON }
+      : { from: location };
+    return <Navigate to="/login" state={redirectState} replace />;
   }
 
   return <>{children}</>;
