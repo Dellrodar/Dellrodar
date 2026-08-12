@@ -160,6 +160,7 @@ describe("DashboardPage", () => {
     render(<DashboardPage />);
 
     expect(await screen.findByText("Something broke")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Something broke");
   });
 
   it("shows a generic error message for non-API failures", async () => {
@@ -203,7 +204,7 @@ describe("DashboardPage", () => {
 
     expect(await screen.findByText("100")).toBeInTheDocument();
     expect(screen.getByText("52.5")).toBeInTheDocument();
-    expect(screen.getByText(/Ranking dogs for/)).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/Ranking dogs for/);
     expect(screen.getByText(/Intact Female · 26-156 weeks/)).toBeInTheDocument();
     expect(mockSearchRescueMatches).toHaveBeenCalledWith("user-token", 1, {
       page: 1,
@@ -260,6 +261,10 @@ describe("DashboardPage", () => {
       animalType: undefined,
       limit: 5,
     });
+    expect(
+      screen.getByText("Breed mix across all animals matching the search"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Locations for the current page of results")).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("Search animals"), "shepherd");
     await user.click(screen.getByRole("button", { name: "Search" }));
@@ -306,6 +311,41 @@ describe("DashboardPage", () => {
       profileId: 1,
       limit: 5,
     });
+  });
+
+  it("labels the chart as full-pool and the map as page-scoped in match mode", async () => {
+    const user = userEvent.setup();
+    mockSearchAnimals.mockResolvedValue(pageOf([animal()]));
+    mockSearchRescueMatches.mockResolvedValue({
+      profile: waterRescue,
+      items: [
+        {
+          animal: animal(),
+          score: 100,
+          breed_score: 50,
+          age_score: 20,
+          sex_score: 20,
+          availability_score: 10,
+        },
+      ],
+      total: 1,
+      page: 1,
+      page_size: 10,
+    });
+    mockGetBreedSummary.mockResolvedValue({
+      items: [{ breed: "Labrador Retriever Mix", count: 608 }],
+      other_count: 0,
+      total_animals: 608,
+    });
+    render(<DashboardPage />);
+    await screen.findByText("Bella");
+
+    await selectOption(user, /Rescue profile/, "Water Rescue");
+
+    expect(
+      await screen.findByText("Breed mix across the profile's full candidate pool"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Locations for the current page of matches")).toBeInTheDocument();
   });
 
   it("maps the visible animals and selects one on row click", async () => {

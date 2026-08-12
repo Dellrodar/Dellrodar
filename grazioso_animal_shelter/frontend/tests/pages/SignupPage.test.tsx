@@ -63,6 +63,7 @@ describe("SignupPage", () => {
     await user.click(screen.getByRole("button", { name: "Sign up" }));
 
     expect(await screen.findByText("Email is already registered")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Email is already registered");
     expect(mockLogin).not.toHaveBeenCalled();
   });
 
