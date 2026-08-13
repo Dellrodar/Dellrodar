@@ -1,0 +1,19 @@
+# Render blueprint for the original CS-340 dashboard only.
+# The capstone app in grazioso_animal_shelter/ is not deployed by this file.
+services:
+  - type: web
+    name: grazioso-dashboard
+    runtime: python
+    plan: free
+    rootDir: grazioso_animal_shelter_dashboard
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:server --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_USERNAME
+        sync: false
+      - key: MONGODB_PASSWORD
+        sync: false

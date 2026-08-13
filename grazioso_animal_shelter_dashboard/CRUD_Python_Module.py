@@ -14,30 +14,35 @@ class AnimalShelter(object):
         collection (Collection): Reference to the 'animals' collection
     """
     
-    def __init__(self, host='localhost', port=27017, db='aac'):
-        # Initializing the MongoClient. 
-        # 
-        # You must edit the password below for your environment. 
-        # 
-        # Connection Variables 
-        # 
+    def __init__(self, host='localhost', port=27017, db='aac', uri=None):
+        # Initializing the MongoClient.
+        #
+        # You must edit the password below for your environment.
+        #
+        # Connection Variables
+        #
         # USER = 'aacuser'
         # PASS = 'SNHU1234'
+        #
+        # uri: full connection string (e.g. mongodb+srv:// for Atlas); when set,
+        # login() uses it as-is and ignores host/port and its own credentials.
         self.host = host
         self.port = port
         self.db_name = db
+        self.uri = uri
         self.database = None
         self.client = None
         self.collection = None
-        
+
 
     def login(self, username, password):
-        # Login function to access the MongoDB databases and collections. 
+        # Login function to access the MongoDB databases and collections.
         # This is hard-wired to use the animals collection
         COL = 'animals'
 
         try:
-            self.client = MongoClient('mongodb://%s:%s@%s:%d' % (username, password, self.host, self.port))
+            connection_uri = self.uri or 'mongodb://%s:%s@%s:%d' % (username, password, self.host, self.port)
+            self.client = MongoClient(connection_uri)
         except Exception as e:
             print("Server Exception: %s", e)
             self.client = None

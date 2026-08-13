@@ -149,8 +149,9 @@ Dash components used in this project:
 
 2. **Install Python dependencies:**
    ```bash
-   pip install -r requirements.txt
+   pip install -r requirements-dev.txt
    ```
+   `requirements.txt` holds only the runtime dependencies used by the deployed app; the dev file adds Jupyter and plotting extras for the notebook.
 
 3. **Open `ProjectTwoDashboard.ipynb`** in JupyterLab or VS Code with the Jupyter extension.
 
@@ -161,6 +162,37 @@ Dash components used in this project:
 - Interrupt the Jupyter notebook kernel to stop the Dash server.
 - `docker compose down` — stops the MongoDB container (data is preserved)
 - `docker compose down -v` — stops the container and removes all stored data
+
+---
+
+## Deployment (Render + MongoDB Atlas)
+
+The dashboard deploys as a Render free web service backed by a MongoDB Atlas free (M0) cluster. `app.py` contains the same dashboard as the notebook, extracted so gunicorn can serve it; the notebook remains the local development environment.
+
+### One-time setup
+
+1. **Atlas:** create a free M0 cluster and a database user. Save the connection string, username, and password in `atlas-credentials.env` (gitignored) as `MONGODB_URI`, `MONGODB_USERNAME`, and `MONGODB_PASSWORD`. Under **Network Access**, allow access from anywhere (`0.0.0.0/0`) — Render free services have no fixed outbound IPs.
+
+2. **Seed the cluster:**
+   ```bash
+   python seed_atlas.py
+   ```
+   This imports `aac_shelter_outcomes.csv` into `aac.animals`, mirroring what `mongo-init/import.sh` does for the local container. Rerun with `--force` to replace existing data.
+
+3. **Render:** create a new Blueprint from this repository — `render.yaml` at the repo root defines the service with `grazioso_animal_shelter_dashboard` as its root directory. When prompted, supply `MONGODB_URI`, `MONGODB_USERNAME`, and `MONGODB_PASSWORD` from `atlas-credentials.env`.
+
+### Ongoing
+
+Pushes to the connected branch redeploy automatically. The free instance spins down after about 15 minutes of inactivity; the first request afterwards takes 30 to 60 seconds while it cold-starts.
+
+### Running the deployed app locally
+
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
+With `atlas-credentials.env` present it connects to Atlas; without it, it falls back to the local Docker MongoDB from the Getting Started steps.
 
 ---
 

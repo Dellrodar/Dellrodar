@@ -1,2 +1,5 @@
 **/__pycache__/
 **/__pycache__/*
+
+atlas-credentials.env
+.env

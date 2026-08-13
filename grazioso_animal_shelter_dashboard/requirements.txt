@@ -1,9 +1,6 @@
-pymongo
-numpy
-pandas
 dash
-notebook
-ipykernel<7
-matplotlib
 dash-leaflet
-jupyter
+pandas
+pymongo
+gunicorn
+python-dotenv

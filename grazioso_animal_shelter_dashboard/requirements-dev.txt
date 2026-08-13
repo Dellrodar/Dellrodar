@@ -1,0 +1,6 @@
+-r requirements.txt
+notebook
+jupyter
+ipykernel<7
+numpy
+matplotlib
