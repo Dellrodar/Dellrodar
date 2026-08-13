@@ -76,8 +76,8 @@ Course outcome evidence map: outcome 3 (algorithms and trade-offs) is strongly c
 - [x] Commit the staged `docs/_config.yml` change that deep-links the Projects card to `grazioso_animal_shelter`, landed 2026-08-09 in the plan-consolidation commit
 - [x] Confirm `docs/_site` is gitignored so stale local builds never publish, verified 2026-08-09 via `docs/.gitignore`
 - [x] Resolve the archive claim: workstream 2 implemented 2026-08-10, so the security bullets on enhancement one and enhancement three now match the code
-- [ ] Add an "Original artifact" link on the enhancement pages and the homepage Projects card pointing to `grazioso_animal_shelter_dashboard` so the pre-enhancement work is one click away
-- [ ] Add when the artifact was created (course term and year) to the artifact description on each enhancement page
+- [x] Add an "Original artifact" link on the enhancement pages and the homepage Projects card pointing to `grazioso_animal_shelter_dashboard` so the pre-enhancement work is one click away
+- [x] Add when the artifact was created (course term and year) to the artifact description on each enhancement page
 - [ ] Course submission logistics outside the repo: narratives saved as Word documents, all original and enhanced code files, the self-assessment, the video, and the GitHub Pages URL submitted in Brightspace
 
 ## Workstream 2: Backend animal management
