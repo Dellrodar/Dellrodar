@@ -33,7 +33,6 @@ export const LoginPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const redirectState = location.state as LoginRedirectState | null;
-  const from = redirectState?.from?.pathname ?? "/dashboard";
   const sessionExpired = redirectState?.reason === SESSION_EXPIRED_REASON;
 
   const handleSubmit = async (event: FormEvent) => {
@@ -43,7 +42,8 @@ export const LoginPage = () => {
 
     try {
       await login(email, password);
-      navigate(from, { replace: true });
+      // Not the prior location: a role switch could land on a forbidden page.
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Unable to log in");
     } finally {

@@ -87,9 +87,8 @@ describe("AuthProvider session expiry", () => {
     renderApp();
 
     const probe = await screen.findByTestId("login-state");
-    expect(JSON.parse(probe.textContent ?? "null")).toMatchObject({
+    expect(JSON.parse(probe.textContent ?? "null")).toEqual({
       reason: "session-expired",
-      from: { pathname: "/dashboard" },
     });
     expect(localStorage.getItem("grazioso.token")).toBeNull();
   });
@@ -115,9 +114,8 @@ describe("AuthProvider session expiry", () => {
     });
 
     const probe = screen.getByTestId("login-state");
-    expect(JSON.parse(probe.textContent ?? "null")).toMatchObject({
+    expect(JSON.parse(probe.textContent ?? "null")).toEqual({
       reason: "session-expired",
-      from: { pathname: "/dashboard" },
     });
     expect(localStorage.getItem("grazioso.token")).toBeNull();
   });
@@ -137,9 +135,8 @@ describe("AuthProvider session expiry", () => {
     });
 
     const probe = screen.getByTestId("login-state");
-    expect(JSON.parse(probe.textContent ?? "null")).toMatchObject({
+    expect(JSON.parse(probe.textContent ?? "null")).toEqual({
       reason: "session-expired",
-      from: { pathname: "/dashboard" },
     });
     expect(localStorage.getItem("grazioso.token")).toBeNull();
   });
@@ -184,19 +181,14 @@ describe("AuthProvider session expiry", () => {
       await vi.advanceTimersByTimeAsync(0);
     });
 
-    // RequireAuth passes the full location object as from; the point here is
-    // that no session-expired reason rides along on a manual logout.
     const probe = screen.getByTestId("login-state");
-    const stateAfterLogout = JSON.parse(probe.textContent ?? "null") as Record<string, unknown>;
-    expect(stateAfterLogout).not.toHaveProperty("reason");
-    expect(stateAfterLogout).toMatchObject({ from: { pathname: "/dashboard" } });
+    expect(JSON.parse(probe.textContent ?? "null")).toBeNull();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(expiresInSeconds * 1000 + 1000);
     });
 
-    const stateAfterExpiry = JSON.parse(probe.textContent ?? "null") as Record<string, unknown>;
-    expect(stateAfterExpiry).not.toHaveProperty("reason");
+    expect(JSON.parse(probe.textContent ?? "null")).toBeNull();
     expect(warnSpy).not.toHaveBeenCalledWith("Session is no longer valid; signing out.");
   });
 });

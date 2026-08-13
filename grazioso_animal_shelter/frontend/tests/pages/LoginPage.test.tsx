@@ -45,16 +45,16 @@ describe("LoginPage", () => {
     expect(await screen.findByText("Dashboard page")).toBeInTheDocument();
   });
 
-  it("redirects back to the page the user came from", async () => {
+  it("redirects to the dashboard even when the redirect state names another page", async () => {
     const user = userEvent.setup();
     mockLogin.mockResolvedValue(undefined);
     renderLoginPage([{ pathname: "/login", state: { from: { pathname: "/admin" } } }]);
 
-    await user.type(screen.getByLabelText("Email"), "admin@example.com");
+    await user.type(screen.getByLabelText("Email"), "viewer@example.com");
     await user.type(screen.getByLabelText("Password"), "password123");
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
-    expect(await screen.findByText("Admin page")).toBeInTheDocument();
+    expect(await screen.findByText("Dashboard page")).toBeInTheDocument();
   });
 
   it("shows the server error message when login fails with an ApiError", async () => {
@@ -99,15 +99,10 @@ describe("LoginPage", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it("returns to the original page after logging back in from an expired session", async () => {
+  it("goes to the dashboard after logging back in from an expired session", async () => {
     const user = userEvent.setup();
     mockLogin.mockResolvedValue(undefined);
-    renderLoginPage([
-      {
-        pathname: "/login",
-        state: { reason: "session-expired", from: { pathname: "/admin" } },
-      },
-    ]);
+    renderLoginPage([{ pathname: "/login", state: { reason: "session-expired" } }]);
 
     expect(screen.getByRole("status")).toBeInTheDocument();
 
@@ -115,7 +110,7 @@ describe("LoginPage", () => {
     await user.type(screen.getByLabelText("Password"), "password123");
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
-    expect(await screen.findByText("Admin page")).toBeInTheDocument();
+    expect(await screen.findByText("Dashboard page")).toBeInTheDocument();
   });
 
   it("replaces the session-expired message with the error when re-login fails", async () => {

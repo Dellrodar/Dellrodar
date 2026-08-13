@@ -9,7 +9,6 @@ const TOKEN_STORAGE_KEY = "grazioso.token";
 export const SESSION_EXPIRED_REASON = "session-expired";
 
 export interface LoginRedirectState {
-  from?: { pathname: string };
   reason?: typeof SESSION_EXPIRED_REASON;
 }
 
@@ -79,16 +78,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // The flag rides through context instead of a navigate() call here because
   // react-router wraps navigation in startTransition: the logout state change
   // would commit first and RequireAuth's redirect would drop the reason.
-  // RequireAuth reads the flag and puts the reason into its own redirect state.
   const handleSessionExpired = useCallback(() => {
     console.warn("Session is no longer valid; signing out.");
     setSessionExpired(true);
     logout();
   }, [logout]);
 
-  // Any authenticated request rejected with 401 means the token expired or was
-  // revoked. Dropping the session here makes the route guards redirect to the
-  // login page, preserving the location the user came from.
   useEffect(() => {
     setUnauthorizedHandler(handleSessionExpired);
     return () => setUnauthorizedHandler(null);
