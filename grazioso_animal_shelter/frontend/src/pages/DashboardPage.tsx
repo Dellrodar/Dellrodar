@@ -1,4 +1,6 @@
+import EditOutlined from "@mui/icons-material/EditOutlined";
 import Search from "@mui/icons-material/Search";
+import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -15,8 +17,9 @@ import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import type { GridColDef, GridRowSelectionModel } from "@mui/x-data-grid";
-import { DataGrid } from "@mui/x-data-grid";
-import { type FormEvent, useEffect, useState } from "react";
+import { DataGrid, GridActionsCell, GridActionsCellItem } from "@mui/x-data-grid";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { Animal } from "../api/animals";
 import { type AnimalPage, type BreedSummary, getBreedSummary, searchAnimals } from "../api/animals";
 import { ApiError } from "../api/client";
@@ -150,6 +153,7 @@ const formatCriteria = (profile: RescueProfile): string => {
 export const DashboardPage = () => {
   usePageTitle("Dashboard");
   const { user, token } = useAuth();
+  const navigate = useNavigate();
 
   const [queryInput, setQueryInput] = useState("");
   const [typeInput, setTypeInput] = useState("");
@@ -263,6 +267,37 @@ export const DashboardPage = () => {
     : [];
 
   const selectedProfile = matches?.profile ?? profiles.find((p) => p.id === profileId) ?? null;
+
+  const canEdit = user?.role === "staff" || user?.role === "admin";
+
+  const actionsColumn = useMemo<GridColDef>(
+    () => ({
+      field: "actions",
+      type: "actions",
+      headerName: "Actions",
+      width: 100,
+      renderCell: (params) => (
+        <GridActionsCell {...params}>
+          <GridActionsCellItem
+            icon={<VisibilityOutlined />}
+            label={`View ${(params.row as Animal).animal_id}`}
+            onClick={() => navigate(`/animals/${params.id}`)}
+          />
+          {canEdit ? (
+            <GridActionsCellItem
+              icon={<EditOutlined />}
+              label={`Edit ${(params.row as Animal).animal_id}`}
+              onClick={() => navigate(`/animals/${params.id}/edit`)}
+            />
+          ) : null}
+        </GridActionsCell>
+      ),
+    }),
+    [navigate, canEdit],
+  );
+
+  const searchColumns = useMemo(() => [...animalFieldColumns, actionsColumn], [actionsColumn]);
+  const matchColumnsWithActions = useMemo(() => [...matchColumns, actionsColumn], [actionsColumn]);
 
   const sharedGridProps = {
     paginationMode: "server" as const,
@@ -380,7 +415,7 @@ export const DashboardPage = () => {
           <DataGrid
             {...sharedGridProps}
             rows={results?.items ?? []}
-            columns={animalFieldColumns}
+            columns={searchColumns}
             rowCount={results?.total ?? 0}
             localeText={{ noRowsLabel: "No animals match your search." }}
           />
@@ -392,7 +427,7 @@ export const DashboardPage = () => {
           <DataGrid
             {...sharedGridProps}
             rows={matchRows}
-            columns={matchColumns}
+            columns={matchColumnsWithActions}
             rowCount={matches?.total ?? 0}
             localeText={{ noRowsLabel: "No candidates found for this profile." }}
           />

@@ -145,7 +145,11 @@ describe("accessibility audits", () => {
       other_count: 0,
       total_animals: 1,
     });
-    const { container } = render(<DashboardPage />);
+    const { container } = render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>,
+    );
     await screen.findByText("Bella");
 
     await expectNoViolations(container);

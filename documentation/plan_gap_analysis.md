@@ -13,7 +13,7 @@ Verified implemented in the code as of commit `22876e8`, re-audited 2026-08-11:
 - Animal search by name, breed, and animal ID with type filter and pagination, plus breed-summary endpoint, admin seed script, and idempotent CSV importer
 - Admin user management (list, change role, toggle active, delete with self-delete guard) behind `require_role("admin")`
 - Backend animal management: create, partial update, archive/unarchive with lookup validation, staff/admin gating, and audit logging on every mutation
-- Animal management UI: add form, edit page with archive/unarchive confirmation, manage page with typeahead, detail page, role-gated nav and routes, all tested
+- Animal management UI: add form, edit page with archive/unarchive confirmation, manage page with typeahead, detail page, role-gated nav and routes, dashboard row actions opening the detail page for everyone and the edit page for staff/admin, all tested
 - MUI migration essentially done: theme with light/dark schemes, AppBar shell with logo and active-route styling, auth cards with password toggle and loading states, dashboard DataGrid with server pagination and page-size selector, outcome chips, match-score progress bars with component-score tooltips, admin panel with Snackbar feedback, self-edit lockout in the UI, and skeleton loading states
 - Global 401 handling: expired tokens clear auth state and redirect to login with a session-expired message; the JWT `exp` claim also triggers a proactive sign-out the moment the token expires
 - SPA rewrite in `vercel.json`, so deep links work
@@ -32,7 +32,7 @@ Verified implemented in the code as of commit `22876e8`, re-audited 2026-08-11:
 | Enhancement plan | Audit logging of admin and animal changes | Done 2026-08-10, `audit_log` table via migration 0006 with log calls on all admin and animal mutations |
 | Enhancement plan | Admin can remove accounts | Done 2026-08-10, `DELETE /admin/users/{id}` with a self-delete guard, audit rows survive actor deletion |
 | Enhancement plan | Staff/admin animal management UI flows | Done 2026-08-11, add/edit/manage pages with lookup selects, archive with confirmation, role-gated nav and routes, all with tests |
-| Pseudocode flows | Animal detail view from search results | Partial, detail page exists at `/animals/:id` but dashboard search rows do not link to it |
+| Pseudocode flows | Animal detail view from search results | Done 2026-08-12, every dashboard row carries a view action navigating to the detail page |
 | Pseudocode flows | Update path via management page with typeahead | Done 2026-08-11, manage page typeahead loads the selected record into the edit form |
 | Pseudocode flows | Optional filters in match mode | Missing, matches endpoint accepts only pagination |
 | Enhancement plan | Google SSO, staff domain recognition | Deferred stretch, never started |
@@ -130,12 +130,12 @@ WCAG 2.1 relative-luminance ratios computed for every muted text token over its 
 
 ## Workstream 6: Animal management UI (after workstream 2)
 
-Implements the Staff Animal Management flows from the pseudocode. Bulk of the work landed 2026-08-11 in the animal-management PR; two dashboard entry points remain.
+Implements the Staff Animal Management flows from the pseudocode. Bulk of the work landed 2026-08-11 in the animal-management PR; the two dashboard entry points landed 2026-08-12, closing the workstream.
 
 - [x] Add Animal entry in the navigation for staff and admin, opening a form with lookup-value selects and validation, done 2026-08-11 via `AddAnimalPage` and `AnimalForm`
-- [ ] Edit icon on dashboard search rows for staff and admin, loading the record into an edit page with all fields, `EditAnimalPage` exists but no dashboard row links to it
+- [x] Edit icon on dashboard search rows for staff and admin, done 2026-08-12 via an Actions column on both search and match grids whose edit action navigates to `EditAnimalPage`
 - [x] Animal management page with typeahead search that loads the selected record into the same update form, done 2026-08-11 via `AnimalManagePage` Autocomplete navigating to the edit page
-- [ ] Animal detail view when any user selects a search result, `AnimalDetailPage` is routed at `/animals/:id` but dashboard search rows do not navigate to it
+- [x] Animal detail view when any user selects a search result, done 2026-08-12 via a view action on every dashboard row navigating to `/animals/:id`, while row click still highlights the map marker
 - [x] Archive action with a confirmation dialog, done 2026-08-11 on the edit page via `ConfirmDialog` with unarchive and an archived-state banner
 - [x] Frontend tests for the new flows and role-based visibility, done 2026-08-11 covering the form, all four pages, the confirm dialog, nav visibility, and router role gating
 
