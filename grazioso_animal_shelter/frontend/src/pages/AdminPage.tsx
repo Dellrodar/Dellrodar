@@ -94,7 +94,7 @@ export const AdminPage = () => {
         Admin Panel
       </Typography>
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" role="alert" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
@@ -200,6 +200,7 @@ export const AdminPage = () => {
         autoHideDuration={4000}
         onClose={() => setSuccess(null)}
         message={success}
+        slotProps={{ content: { role: "status" } }}
       />
     </Box>
   );

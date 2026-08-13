@@ -67,6 +67,7 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
     expect(await screen.findByText("Invalid email or password")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Invalid email or password");
   });
 
   it("shows a generic error message for non-API failures", async () => {

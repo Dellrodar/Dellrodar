@@ -98,16 +98,18 @@ export interface BreedSummary {
 export interface BreedSummaryParams {
   q?: string;
   animalType?: string;
+  profileId?: number;
   limit?: number;
 }
 
 export const getBreedSummary = (
   token: string,
-  { q, animalType, limit }: BreedSummaryParams = {},
+  { q, animalType, profileId, limit }: BreedSummaryParams = {},
 ): Promise<BreedSummary> => {
   const params = new URLSearchParams();
   if (q) params.set("q", q);
   if (animalType) params.set("animal_type", animalType);
+  if (profileId) params.set("profile_id", String(profileId));
   if (limit) params.set("limit", String(limit));
 
   const query = params.toString();

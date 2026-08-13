@@ -54,6 +54,7 @@ describe("AdminPage", () => {
     render(<AdminPage />);
 
     expect(await screen.findByText("You do not have permission")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("You do not have permission");
   });
 
   it("shows a generic error message when the user list fails for a non-API reason", async () => {
@@ -77,7 +78,7 @@ describe("AdminPage", () => {
 
     expect(mockUpdateUserRole).toHaveBeenCalledWith("admin-token", 1, "staff");
     expect(within(row).getByRole("combobox")).toHaveTextContent("staff");
-    expect(await screen.findByText("Role updated")).toBeInTheDocument();
+    expect(await screen.findByRole("status")).toHaveTextContent("Role updated");
   });
 
   it("toggles a user's active status", async () => {
@@ -132,7 +133,7 @@ describe("AdminPage", () => {
     await user.click(within(dialog).getByRole("button", { name: "Delete" }));
 
     expect(mockDeleteUser).toHaveBeenCalledWith("admin-token", 2);
-    expect(await screen.findByText("Account deleted")).toBeInTheDocument();
+    expect(await screen.findByRole("status")).toHaveTextContent("Account deleted");
     expect(screen.queryByText("staff@example.com")).not.toBeInTheDocument();
   });
 

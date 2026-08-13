@@ -134,4 +134,12 @@ describe("getBreedSummary", () => {
     expect(url).toContain("animal_type=Dog");
     expect(url).toContain("limit=5");
   });
+
+  it("passes the rescue profile id as profile_id", async () => {
+    await getBreedSummary("token123", { profileId: 3, limit: 5 });
+
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toContain("profile_id=3");
+    expect(url).not.toContain("animal_type=");
+  });
 });

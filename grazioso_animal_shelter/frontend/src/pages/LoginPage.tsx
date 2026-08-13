@@ -95,7 +95,11 @@ export const LoginPage = () => {
             },
           }}
         />
-        {error && <Alert severity="error">{error}</Alert>}
+        {error && (
+          <Alert severity="error" role="alert">
+            {error}
+          </Alert>
+        )}
         <Button type="submit" variant="contained" size="large" loading={isSubmitting}>
           Log in
         </Button>

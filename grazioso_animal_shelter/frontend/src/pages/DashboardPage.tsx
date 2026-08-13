@@ -194,26 +194,24 @@ export const DashboardPage = () => {
   }, [token, search, page, pageSize, profileId]);
 
   // The chart covers the whole filtered set — or, in match mode, the profile's
-  // full candidate pool (every animal of its type) — so it refetches on new
-  // searches and profile changes but not on page turns.
+  // full candidate pool, scoped server-side by profile_id — so it refetches on
+  // new searches and profile changes but not on page turns.
   useEffect(() => {
     if (!token) return;
 
-    const profile = profileId === null ? null : profiles.find((p) => p.id === profileId);
-    if (profileId !== null && !profile) return;
-
-    const params = profile
-      ? { animalType: profile.animal_type, limit: TOP_BREEDS }
-      : {
-          q: search.q || undefined,
-          animalType: search.animalType || undefined,
-          limit: TOP_BREEDS,
-        };
+    const params =
+      profileId !== null
+        ? { profileId, limit: TOP_BREEDS }
+        : {
+            q: search.q || undefined,
+            animalType: search.animalType || undefined,
+            limit: TOP_BREEDS,
+          };
 
     getBreedSummary(token, params)
       .then(setBreedSummary)
       .catch(() => setBreedSummary(null));
-  }, [token, search, profileId, profiles]);
+  }, [token, search, profileId]);
 
   useEffect(() => {
     if (!token || profileId === null) return;
@@ -365,14 +363,14 @@ export const DashboardPage = () => {
       </Paper>
 
       {profileId !== null && selectedProfile && (
-        <Alert severity="info" sx={{ mt: 2 }}>
+        <Alert severity="info" role="status" sx={{ mt: 2 }}>
           Ranking {selectedProfile.animal_type.toLowerCase()}s for{" "}
           <strong>{selectedProfile.name}</strong>: {formatCriteria(selectedProfile)}
         </Alert>
       )}
 
       {error && (
-        <Alert severity="error" sx={{ mt: 2 }}>
+        <Alert severity="error" role="alert" sx={{ mt: 2 }}>
           {error}
         </Alert>
       )}
@@ -403,24 +401,44 @@ export const DashboardPage = () => {
 
       {profileId === null && results && breedSummary && (
         <div className="dashboard-visuals">
-          <BreedChart
-            slices={breedSlicesFromSummary(breedSummary)}
-            totalAnimals={breedSummary.total_animals}
-          />
-          <AnimalMap animals={results.items} selectedId={selectedAnimalId} />
+          <Box>
+            <BreedChart
+              slices={breedSlicesFromSummary(breedSummary)}
+              totalAnimals={breedSummary.total_animals}
+            />
+            <Typography variant="caption" color="text.secondary" component="p">
+              Breed mix across all animals matching the search
+            </Typography>
+          </Box>
+          <Box>
+            <AnimalMap animals={results.items} selectedId={selectedAnimalId} />
+            <Typography variant="caption" color="text.secondary" component="p">
+              Locations for the current page of results
+            </Typography>
+          </Box>
         </div>
       )}
 
       {profileId !== null && matches && matches.items.length > 0 && breedSummary && (
         <div className="dashboard-visuals">
-          <BreedChart
-            slices={breedSlicesFromSummary(breedSummary)}
-            totalAnimals={breedSummary.total_animals}
-          />
-          <AnimalMap
-            animals={matches.items.map((match) => match.animal)}
-            selectedId={selectedAnimalId}
-          />
+          <Box>
+            <BreedChart
+              slices={breedSlicesFromSummary(breedSummary)}
+              totalAnimals={breedSummary.total_animals}
+            />
+            <Typography variant="caption" color="text.secondary" component="p">
+              Breed mix across the profile's full candidate pool
+            </Typography>
+          </Box>
+          <Box>
+            <AnimalMap
+              animals={matches.items.map((match) => match.animal)}
+              selectedId={selectedAnimalId}
+            />
+            <Typography variant="caption" color="text.secondary" component="p">
+              Locations for the current page of matches
+            </Typography>
+          </Box>
         </div>
       )}
     </Box>
