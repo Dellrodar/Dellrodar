@@ -11,6 +11,8 @@ application was a Flask-based dashboard that helped Grazioso Salvare identify do
 suitable for rescue training by filtering animal records and displaying breed
 visualizations and location data.
 
+[View the original artifact](https://github.com/Dellrodar/Dellrodar/tree/main/grazioso_animal_shelter_dashboard)
+
 ## What Was Enhanced
 
 I restructured the original application into a full-stack monorepo with clearly

@@ -10,6 +10,8 @@ The artifact is the animal shelter dashboard originally built in CS 340. In the
 original application, rescue-profile filtering relied on hard-coded criteria baked into
 the dashboard logic.
 
+[View the original artifact](https://github.com/Dellrodar/Dellrodar/tree/main/grazioso_animal_shelter_dashboard)
+
 ## What Was Enhanced
 
 I replaced the hard-coded filtering with a database-driven matching algorithm:

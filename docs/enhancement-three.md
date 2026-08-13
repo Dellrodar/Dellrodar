@@ -10,6 +10,8 @@ The artifact is the animal shelter dashboard originally built in CS 340. The ori
 application read shelter records from a loosely structured data source with no schema
 enforcement, no user accounts, and rescue criteria hard-coded in the application.
 
+[View the original artifact](https://github.com/Dellrodar/Dellrodar/tree/main/grazioso_animal_shelter_dashboard)
+
 ## What Was Enhanced
 
 I migrated the data layer to PostgreSQL with a normalized relational schema:

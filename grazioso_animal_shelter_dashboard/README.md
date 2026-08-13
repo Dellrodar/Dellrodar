@@ -167,6 +167,8 @@ Dash components used in this project:
 
 ## Deployment (Render + MongoDB Atlas)
 
+**Live at: https://grazioso-dashboard.onrender.com/** (free instance — allow 30 to 60 seconds for cold start after idle periods)
+
 The dashboard deploys as a Render free web service backed by a MongoDB Atlas free (M0) cluster. `app.py` contains the same dashboard as the notebook, extracted so gunicorn can serve it; the notebook remains the local development environment.
 
 ### One-time setup
