@@ -9,12 +9,16 @@ const mockSearchAnimals = vi.fn();
 const mockGetBreedSummary = vi.fn();
 const mockListRescueProfiles = vi.fn();
 const mockSearchRescueMatches = vi.fn();
+const mockUseAuth = vi.fn();
+const mockNavigate = vi.fn();
 
 vi.mock("../../src/auth/AuthContext", () => ({
-  useAuth: () => ({
-    token: "user-token",
-    user: { id: 1, email: "viewer@example.com", is_active: true, role: "viewer" },
-  }),
+  useAuth: () => mockUseAuth(),
+}));
+
+vi.mock("react-router-dom", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-router-dom")>()),
+  useNavigate: () => mockNavigate,
 }));
 
 vi.mock("../../src/api/animals", () => ({
@@ -84,12 +88,21 @@ const selectOption = async (
 
 const emptySummary = { items: [], other_count: 0, total_animals: 0 };
 
+const withRole = (role: "viewer" | "staff" | "admin") =>
+  mockUseAuth.mockReturnValue({
+    token: "user-token",
+    user: { id: 1, email: `${role}@example.com`, is_active: true, role },
+  });
+
 describe("DashboardPage", () => {
   beforeEach(() => {
     mockSearchAnimals.mockReset();
     mockGetBreedSummary.mockReset();
     mockListRescueProfiles.mockReset();
     mockSearchRescueMatches.mockReset();
+    mockUseAuth.mockReset();
+    mockNavigate.mockReset();
+    withRole("viewer");
     mockListRescueProfiles.mockResolvedValue([waterRescue]);
     mockGetBreedSummary.mockResolvedValue(emptySummary);
   });
@@ -366,6 +379,89 @@ describe("DashboardPage", () => {
     expect(screen.getByText("Max").closest('[role="row"]')).toHaveAttribute(
       "aria-selected",
       "true",
+    );
+  });
+
+  it("navigates to the detail page from the view action as a viewer", async () => {
+    const user = userEvent.setup();
+    mockSearchAnimals.mockResolvedValue(pageOf([animal()]));
+    render(<DashboardPage />);
+    await screen.findByText("Bella");
+
+    await user.click(screen.getByRole("menuitem", { name: "View A000001" }));
+
+    expect(mockNavigate).toHaveBeenCalledWith("/animals/1");
+  });
+
+  it("hides the edit action from viewers", async () => {
+    mockSearchAnimals.mockResolvedValue(pageOf([animal()]));
+    render(<DashboardPage />);
+    await screen.findByText("Bella");
+
+    expect(screen.getByRole("menuitem", { name: "View A000001" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Edit A000001" })).not.toBeInTheDocument();
+  });
+
+  it.each(["staff", "admin"] as const)(
+    "navigates to the edit page from the edit action as %s",
+    async (role) => {
+      const user = userEvent.setup();
+      withRole(role);
+      mockSearchAnimals.mockResolvedValue(pageOf([animal()]));
+      render(<DashboardPage />);
+      await screen.findByText("Bella");
+
+      await user.click(screen.getByRole("menuitem", { name: "Edit A000001" }));
+
+      expect(mockNavigate).toHaveBeenCalledWith("/animals/1/edit");
+    },
+  );
+
+  it("shows view and edit actions on match rows for staff", async () => {
+    const user = userEvent.setup();
+    withRole("staff");
+    mockSearchAnimals.mockResolvedValue(pageOf([animal()]));
+    mockSearchRescueMatches.mockResolvedValue({
+      profile: waterRescue,
+      items: [
+        {
+          animal: animal({ id: 2, animal_id: "A000002", name: "Rex" }),
+          score: 52.5,
+          breed_score: 2.5,
+          age_score: 20,
+          sex_score: 20,
+          availability_score: 10,
+        },
+      ],
+      total: 1,
+      page: 1,
+      page_size: 10,
+    });
+    render(<DashboardPage />);
+    await screen.findByText("Bella");
+
+    await selectOption(user, /Rescue profile/, "Water Rescue");
+    await screen.findByText("Rex");
+
+    expect(screen.getByRole("menuitem", { name: "View A000002" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Edit A000002" })).toBeInTheDocument();
+  });
+
+  it("does not select the row when a row action is clicked", async () => {
+    const user = userEvent.setup();
+    mockSearchAnimals.mockResolvedValue(
+      pageOf([animal(), animal({ id: 2, animal_id: "A000002", name: "Max" })]),
+    );
+    render(<DashboardPage />);
+    await screen.findByText("Bella");
+
+    await user.click(screen.getByRole("menuitem", { name: "View A000002" }));
+
+    expect(mockNavigate).toHaveBeenCalledWith("/animals/2");
+    expect(screen.getByTestId("animal-map")).toHaveAttribute("data-selected", "");
+    expect(screen.getByText("Max").closest('[role="row"]')).toHaveAttribute(
+      "aria-selected",
+      "false",
     );
   });
 
