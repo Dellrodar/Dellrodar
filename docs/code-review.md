@@ -20,6 +20,8 @@ databases.
   </iframe>
 </div>
 
+[Watch the code review on YouTube](https://www.youtube.com/watch?v=pd7dArJnuQQ) if the embedded player does not load.
+
 ## What the Review Covers
 
 - **Existing functionality**: the original Python Dash dashboard that filtered animal

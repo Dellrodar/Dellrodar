@@ -13,6 +13,17 @@
         <p><a href="{{ '/' | relative_url }}">&larr; Back to portfolio</a></p>
         <h1>{{ page.title }}</h1>
         {{ content }}
+        <hr>
+        <nav aria-label="Portfolio pages">
+          <p>
+            More from this portfolio:
+            <a href="{{ '/self-assessment/' | relative_url }}">Self-Assessment</a> &middot;
+            <a href="{{ '/code-review/' | relative_url }}">Code Review</a> &middot;
+            <a href="{{ '/enhancement-one/' | relative_url }}">Enhancement One</a> &middot;
+            <a href="{{ '/enhancement-two/' | relative_url }}">Enhancement Two</a> &middot;
+            <a href="{{ '/enhancement-three/' | relative_url }}">Enhancement Three</a>
+          </p>
+        </nav>
       </div>
     </div>
   </main>

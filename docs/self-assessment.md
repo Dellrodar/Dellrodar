@@ -4,8 +4,6 @@ title: Professional Self-Assessment
 permalink: /self-assessment/
 ---
 
-## Professional Self-Assessment
-
 Completing my Computer Science degree and building this ePortfolio represents more than finishing an academic program. I originally entered the program while working in retail, balancing two jobs, raising a family, and trying to build a different future for myself. For the first two years, I was able to maintain that balance, but eventually the workload became too much and my grades began to suffer. I decided to step away from school, expecting the break to be temporary. Instead, ten years passed before I had the opportunity to return and finish what I had started.
 
 By the time I returned, my life and career had changed considerably. I had entered the technology industry and was working as a front-end developer, but shortly afterward the company I worked for went out of business and I lost my position. I decided that completing my degree and continuing to grow professionally were goals I was no longer willing to leave unfinished. After several months of focused study and job searching, I moved into full-stack development and continued progressing both academically and professionally. Returning with industry experience made portions of the coursework easier, but it also exposed gaps in my knowledge that I had not realized were there.
