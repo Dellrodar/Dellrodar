@@ -55,7 +55,7 @@ content:
         link: https://dellrodar.github.io/Dellrodar/enhancement-one/
         link_text: Read the narrative
         description: |
-          Restructured the original Flask dashboard into a full-stack monorepo with a
+          Restructured the original Python Dash dashboard into a full-stack monorepo with a
           FastAPI backend, a React frontend, separated service and data-access layers,
           and role-based authentication and authorization.
       - layout: left
