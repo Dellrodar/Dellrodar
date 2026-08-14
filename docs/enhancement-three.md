@@ -6,9 +6,10 @@ permalink: /enhancement-three/
 
 ## The Artifact
 
-The artifact is the animal shelter dashboard originally built in CS 340. The original
-application read shelter records from a loosely structured data source with no schema
-enforcement, no user accounts, and rescue criteria hard-coded in the application.
+The artifact is the animal shelter dashboard originally built in CS 340: Client/Server
+Development during the January–March 2026 term. The original application read shelter
+records from a loosely structured data source with no schema enforcement, no user
+accounts, and rescue criteria hard-coded in the application.
 
 [View the original artifact](https://github.com/Dellrodar/Dellrodar/tree/main/grazioso_animal_shelter_dashboard)
 
@@ -47,6 +48,10 @@ add cost without adding integrity, which was itself a documented design decision
   extension applied to create a structured, reliable data model
 - **Security mindset**: account data stored with hashed passwords, role data enforced
   at the database level, and archive behavior preserving audit history
+
+This enhancement most directly demonstrates outcomes three, four, and five. Outcomes one
+and two are demonstrated more fully through the portfolio's collaboration, communication,
+and documentation evidence rather than through the database enhancement itself.
 
 ## Reflection
 

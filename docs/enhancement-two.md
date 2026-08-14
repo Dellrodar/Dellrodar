@@ -6,9 +6,9 @@ permalink: /enhancement-two/
 
 ## The Artifact
 
-The artifact is the animal shelter dashboard originally built in CS 340. In the
-original application, rescue-profile filtering relied on hard-coded criteria baked into
-the dashboard logic.
+The artifact is the animal shelter dashboard originally built in CS 340: Client/Server
+Development during the January–March 2026 term. In the original application,
+rescue-profile filtering relied on hard-coded criteria baked into the dashboard logic.
 
 [View the original artifact](https://github.com/Dellrodar/Dellrodar/tree/main/grazioso_animal_shelter_dashboard)
 
@@ -49,6 +49,11 @@ into the application to score it.
   ranking, filtering, and pagination, with explicit trade-off decisions
 - **Tools, techniques, and value**: the matching feature makes rescue-profile searches
   practical for non-technical users
+
+This enhancement most directly demonstrates outcomes three and four. Outcomes one and two
+are demonstrated more strongly through collaboration, communication, and documentation
+elsewhere in the portfolio. Security was considered in the authenticated search workflow,
+but outcome five was not the primary focus of this enhancement.
 
 ## Reflection
 

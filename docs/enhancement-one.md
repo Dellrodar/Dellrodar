@@ -6,10 +6,10 @@ permalink: /enhancement-one/
 
 ## The Artifact
 
-The artifact is the animal shelter dashboard originally built in CS 340. The original
-application was a Flask-based dashboard that helped Grazioso Salvare identify dogs
-suitable for rescue training by filtering animal records and displaying breed
-visualizations and location data.
+The artifact is the animal shelter dashboard originally built in CS 340: Client/Server
+Development during the January–March 2026 term. The original application was a Python
+Dash dashboard that helped Grazioso Salvare identify dogs suitable for rescue training
+by filtering animal records and displaying breed visualizations and location data.
 
 [View the original artifact](https://github.com/Dellrodar/Dellrodar/tree/main/grazioso_animal_shelter_dashboard)
 
@@ -47,6 +47,11 @@ means touching everything at once.
   to deliver a more maintainable and useful application
 - **Security mindset**: defense-in-depth through authentication, authorization,
   validation, and safe error handling
+
+This enhancement most directly demonstrates outcomes three, four, and five. Outcomes one
+and two are demonstrated more strongly through the broader portfolio, including the code
+review, technical documentation, and professional self-assessment, rather than through
+this enhancement alone.
 
 ## Reflection
 
