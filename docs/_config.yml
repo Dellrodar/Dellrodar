@@ -53,7 +53,7 @@ content:
         border: weak
         title: "Enhancement One: Software Design and Engineering"
         link: https://dellrodar.github.io/Dellrodar/enhancement-one/
-        link_text: Read the narrative
+        link_text: Read the Enhancement One narrative
         description: |
           Restructured the original Python Dash dashboard into a full-stack monorepo with a
           FastAPI backend, a React frontend, separated service and data-access layers,
@@ -62,7 +62,7 @@ content:
         border: weak
         title: "Enhancement Two: Algorithms and Data Structures"
         link: https://dellrodar.github.io/Dellrodar/enhancement-two/
-        link_text: Read the narrative
+        link_text: Read the Enhancement Two narrative
         description: |
           Replaced hard-coded rescue filtering with database-driven rescue profiles and a
           scoring algorithm that ranks candidate animals using PostgreSQL trigram
@@ -71,7 +71,7 @@ content:
         border: weak
         title: "Enhancement Three: Databases"
         link: https://dellrodar.github.io/Dellrodar/enhancement-three/
-        link_text: Read the narrative
+        link_text: Read the Enhancement Three narrative
         description: |
           Migrated the data layer to a normalized PostgreSQL schema with lookup tables,
           user and role tables, rescue profile tables, migrations, constraints, and
@@ -93,7 +93,7 @@ content:
           chart, and location map. Built with FastAPI, React, and PostgreSQL, with
           role-based access for viewer, staff, and admin users. Reviewers can create a
           free account from the sign-up link to explore the app with the viewer role.
-          [View the source on GitHub](https://github.com/Dellrodar/Dellrodar/tree/main/grazioso_animal_shelter).
+          [View the capstone source on GitHub](https://github.com/Dellrodar/Dellrodar/tree/main/grazioso_animal_shelter).
           [View the original artifact](https://github.com/Dellrodar/Dellrodar/tree/main/grazioso_animal_shelter_dashboard).
       - layout: top-middle
         title: Grazioso Salvare Animal Shelter Dashboard
@@ -108,7 +108,7 @@ content:
           training profiles, with an interactive data table, breed distribution chart, and
           geolocation map. Deployed on Render with MongoDB Atlas; the free instance sleeps
           when idle, so the first load can take up to a minute.
-          [View the source on GitHub](https://github.com/Dellrodar/Dellrodar/tree/main/grazioso_animal_shelter_dashboard).
+          [View the original source on GitHub](https://github.com/Dellrodar/Dellrodar/tree/main/grazioso_animal_shelter_dashboard).
 
   - title: Education
     layout: list
