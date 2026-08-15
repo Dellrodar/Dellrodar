@@ -15,7 +15,7 @@ title: Software Engineer
 email: ecrocco@gmail.com
 github_username: Dellrodar
 
-# Dark Mode (true = dark, false = light with toggle, never = light only)
+# Dark Mode (true = always dark, false = follow the visitor's OS preference, never = always light)
 darkmode: false
 
 # About Section
