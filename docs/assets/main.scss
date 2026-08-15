@@ -1,0 +1,12 @@
+---
+---
+
+@import 'modern-resume-theme';
+
+// The theme justifies all paragraph text, which creates uneven word
+// spacing without hyphenation; ragged-right reads better. Quotes keep
+// their centered styling because p.quote is more specific.
+p,
+ul {
+  text-align: left;
+}
