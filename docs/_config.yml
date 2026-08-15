@@ -113,7 +113,7 @@ content:
   - title: Education
     layout: list
     content:
-      - layout: top-right
+      - layout: top-middle
         title: Southern New Hampshire University
         sub_title: B.S. Computer Science
         caption: Expected graduation September 2026
