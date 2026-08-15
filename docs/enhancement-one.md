@@ -67,6 +67,8 @@ and instructor feedback made clear how much harder that made the work to review.
 lesson directly shaped the later enhancements, which I built in small, focused commits
 that each document what changed and why.
 
+**Reviewer access:** create a free account from the sign-up link on the live app to explore it with the viewer role.
+
 **Artifact links:** [Live application](https://dellrodar.vercel.app) &middot;
 [Repository](https://github.com/Dellrodar/Dellrodar) &middot;
 [Enhancement branch](https://github.com/Dellrodar/Dellrodar/tree/enhancement-one)

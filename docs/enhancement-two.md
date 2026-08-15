@@ -69,6 +69,8 @@ animal data model, authenticated search, rescue profiles, the matching algorithm
 frontend search interface, ranked results, tests, and documentation. That structure made
 the development process itself reviewable, not just the result.
 
+**Reviewer access:** create a free account from the sign-up link on the live app to explore it with the viewer role.
+
 **Artifact links:** [Live application](https://dellrodar.vercel.app) &middot;
 [Repository](https://github.com/Dellrodar/Dellrodar) &middot;
 [Enhancement branch](https://github.com/Dellrodar/Dellrodar/tree/enhancement-two)

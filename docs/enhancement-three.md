@@ -67,6 +67,8 @@ focused commits and clearly identifying which files each change touched, which m
 the smoothest enhancement to build and review despite being the most structurally
 invasive.
 
+**Reviewer access:** create a free account from the sign-up link on the live app to explore it with the viewer role.
+
 **Artifact links:** [Live application](https://dellrodar.vercel.app) &middot;
 [Repository](https://github.com/Dellrodar/Dellrodar) &middot;
 [Enhancement branch](https://github.com/Dellrodar/Dellrodar/tree/enhancement-three)
